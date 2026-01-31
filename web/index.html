@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>emteeayy - NYC Transit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
@@ -12,101 +15,137 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e;
-      color: #eee;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f3ef;
+      color: #3d3a36;
       min-height: 100vh;
-      padding: 20px;
+      padding: 24px 16px;
     }
 
     .container {
-      max-width: 600px;
+      max-width: 520px;
       margin: 0 auto;
     }
 
     header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 32px;
     }
 
     h1 {
-      font-size: 2rem;
-      font-weight: 300;
-      letter-spacing: 2px;
-      margin-bottom: 5px;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 2.5rem;
+      font-weight: 400;
+      color: #2c2925;
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
     }
 
     .tagline {
-      color: #888;
-      font-size: 0.9rem;
+      color: #8a857d;
+      font-size: 0.95rem;
     }
 
     .clock {
-      color: #4a90d9;
-      font-size: 1.1rem;
+      color: #6b8f71;
+      font-size: 1.05rem;
       font-weight: 500;
-      margin-top: 8px;
+      margin-top: 10px;
       font-variant-numeric: tabular-nums;
     }
 
     .search-box {
-      background: #16213e;
-      border-radius: 12px;
-      padding: 20px;
+      background: #fffef9;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
       margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px 16px;
+      background: #f0ede8;
+      border: none;
+      border-radius: 10px;
+      color: #6b665e;
+      font-size: 0.9rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab.active {
+      background: #3d3a36;
+      color: #f5f3ef;
+    }
+
+    .tab:hover:not(.active) {
+      background: #e8e4dd;
     }
 
     .input-group {
       display: flex;
       gap: 10px;
-      margin-bottom: 15px;
+      margin-bottom: 16px;
     }
 
     input[type="text"] {
       flex: 1;
-      padding: 14px 16px;
-      font-size: 1.1rem;
-      border: none;
-      border-radius: 8px;
-      background: #0f0f23;
-      color: #fff;
+      padding: 14px 18px;
+      font-size: 1.05rem;
+      font-family: inherit;
+      border: 2px solid #e8e4dd;
+      border-radius: 12px;
+      background: #fff;
+      color: #3d3a36;
       outline: none;
+      transition: border-color 0.2s;
     }
 
     input[type="text"]::placeholder {
-      color: #555;
+      color: #b5b0a7;
     }
 
     input[type="text"]:focus {
-      box-shadow: 0 0 0 2px #4a90d9;
+      border-color: #6b8f71;
     }
 
     button {
-      padding: 14px 20px;
-      font-size: 1rem;
+      padding: 14px 24px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 500;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
 
     .btn-primary {
-      background: #4a90d9;
+      background: #6b8f71;
       color: #fff;
     }
 
     .btn-primary:hover {
-      background: #5ba0e9;
+      background: #5a7a5f;
     }
 
     .btn-secondary {
-      background: #2d2d44;
-      color: #ccc;
+      background: #f0ede8;
+      color: #5c574f;
       width: 100%;
     }
 
     .btn-secondary:hover {
-      background: #3d3d54;
+      background: #e8e4dd;
     }
 
     button:disabled {
@@ -116,61 +155,35 @@
 
     .divider {
       text-align: center;
-      color: #555;
-      margin: 15px 0;
+      color: #b5b0a7;
+      margin: 16px 0;
       font-size: 0.85rem;
     }
 
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 15px;
-    }
-
-    .tab {
-      flex: 1;
-      padding: 12px;
-      background: #0f0f23;
-      border: 2px solid transparent;
-      color: #888;
-      font-size: 0.95rem;
-      font-weight: 500;
-    }
-
-    .tab.active {
-      border-color: #4a90d9;
-      color: #fff;
-      background: #1a1a2e;
-    }
-
-    .tab:hover:not(.active) {
-      background: #1a1a2e;
-      color: #aaa;
-    }
-
     .error {
-      background: #4a1c1c;
-      color: #ff6b6b;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 15px;
+      background: #fdf2f2;
+      color: #b54a4a;
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
     }
 
     .loading {
       text-align: center;
-      padding: 40px;
-      color: #888;
+      padding: 48px 24px;
+      color: #8a857d;
     }
 
     .spinner {
       display: inline-block;
-      width: 24px;
-      height: 24px;
-      border: 3px solid #333;
-      border-top-color: #4a90d9;
+      width: 28px;
+      height: 28px;
+      border: 3px solid #e8e4dd;
+      border-top-color: #6b8f71;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 10px;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 12px;
     }
 
     @keyframes spin {
@@ -178,35 +191,37 @@
     }
 
     .results {
-      margin-top: 20px;
+      margin-top: 8px;
     }
 
     .station, .bus-stop {
-      background: #16213e;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
+      background: #fffef9;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
 
     .station-header, .stop-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .station-name, .stop-name {
-      font-size: 1.1rem;
-      font-weight: 500;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #2c2925;
     }
 
     .station-distance, .stop-distance {
-      color: #888;
+      color: #a09a91;
       font-size: 0.85rem;
     }
 
     .direction {
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
 
     .direction:last-child {
@@ -214,11 +229,12 @@
     }
 
     .direction-label {
-      font-size: 0.75rem;
-      color: #888;
+      font-size: 0.7rem;
+      color: #a09a91;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
+      letter-spacing: 1.2px;
+      font-weight: 500;
+      margin-bottom: 8px;
     }
 
     .trains {
@@ -231,15 +247,15 @@
     .train {
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: #0f0f23;
-      padding: 6px 10px;
-      border-radius: 6px;
+      gap: 7px;
+      background: #f5f3ef;
+      padding: 8px 12px;
+      border-radius: 10px;
     }
 
     .line-badge {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -251,14 +267,16 @@
 
     .train-time {
       font-size: 0.9rem;
+      font-weight: 500;
+      color: #4a4641;
     }
 
     .bus-arrival {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #2d2d44;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0ede8;
     }
 
     .bus-arrival:last-child {
@@ -272,52 +290,57 @@
 
     .bus-route {
       display: inline-block;
-      background: #0039a6;
+      background: #4a7c9b;
       color: #fff;
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 5px 10px;
+      border-radius: 6px;
       font-weight: 600;
-      font-size: 0.85rem;
-      margin-right: 8px;
+      font-size: 0.8rem;
+      margin-right: 10px;
     }
 
     .bus-destination {
-      color: #aaa;
+      color: #8a857d;
       font-size: 0.85rem;
     }
 
     .bus-time {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: #4a90d9;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #6b8f71;
       white-space: nowrap;
     }
 
     .no-arrivals {
-      color: #666;
+      color: #a09a91;
       font-style: italic;
       font-size: 0.9rem;
+      padding: 8px 0;
     }
 
     .location-info {
       text-align: center;
-      color: #666;
-      font-size: 0.85rem;
-      margin-bottom: 15px;
+      color: #8a857d;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
     }
 
     footer {
       text-align: center;
       margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #2d2d44;
-      color: #555;
+      padding-top: 24px;
+      border-top: 1px solid #e8e4dd;
+      color: #a09a91;
       font-size: 0.8rem;
     }
 
     footer a {
-      color: #4a90d9;
+      color: #6b8f71;
       text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
     }
 
     /* Subway line colors */
@@ -329,7 +352,7 @@
     .line-G { background: #6cbe45; }
     .line-J, .line-Z { background: #996633; }
     .line-L { background: #a7a9ac; }
-    .line-N, .line-Q, .line-R, .line-W { background: #fccc0a; color: #000; }
+    .line-N, .line-Q, .line-R, .line-W { background: #fccc0a; color: #333; }
     .line-S { background: #808183; }
     .line-SIR { background: #0039a6; font-size: 0.5rem; }
   </style>
@@ -338,7 +361,7 @@
   <div class="container">
     <header>
       <h1>emteeayy</h1>
-      <p class="tagline">NYC transit arrivals, no fluff</p>
+      <p class="tagline">nyc transit arrivals, no fluff</p>
       <p id="clock" class="clock"></p>
     </header>
 
@@ -438,7 +461,7 @@
     }
 
     function getLineColor(line) {
-      return lineColors[line] || '#666';
+      return lineColors[line] || '#888';
     }
 
     function isLightColor(line) {
@@ -478,7 +501,7 @@
             for (const arr of station.northbound.slice(0, 4)) {
               const line = arr.route || '?';
               const color = getLineColor(line);
-              const textColor = isLightColor(line) ? '#000' : '#fff';
+              const textColor = isLightColor(line) ? '#333' : '#fff';
               html += `<div class="train">
                 <span class="line-badge" style="background:${color};color:${textColor}">${line}</span>
                 <span class="train-time">${formatTime(arr.minutes_away)}</span>
@@ -494,7 +517,7 @@
             for (const arr of station.southbound.slice(0, 4)) {
               const line = arr.route || '?';
               const color = getLineColor(line);
-              const textColor = isLightColor(line) ? '#000' : '#fff';
+              const textColor = isLightColor(line) ? '#333' : '#fff';
               html += `<div class="train">
                 <span class="line-badge" style="background:${color};color:${textColor}">${line}</span>
                 <span class="train-time">${formatTime(arr.minutes_away)}</span>

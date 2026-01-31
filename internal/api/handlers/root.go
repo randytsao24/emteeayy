@@ -13,7 +13,7 @@ func NewRootHandler() *RootHandler {
 func (h *RootHandler) Index(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"name":        "emteeayy",
-		"description": "Real-time MTA transit tracking for NYC - Go edition!",
+		"description": "MTA tracking for NYC without the fluff",
 		"version":     "2.0.0-go",
 		"endpoints": map[string]string{
 			"GET /":       "API information",

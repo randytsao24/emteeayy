@@ -1,31 +1,28 @@
-# Fly.io configuration for emteeayy
-# See https://fly.io/docs/reference/configuration/
+# fly.toml app configuration file generated for app-aged-pond-1142 on 2026-01-31T19:52:41Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "app-aged-pond-1142"
-primary_region = "ewr"  # Newark, NJ - closest to NYC for MTA API latency
+app = 'app-aged-pond-1142'
+primary_region = 'iad'
 
 [build]
+  [build.args]
+    GO_VERSION = '1.25.6'
 
 [env]
-  PORT = "8080"
-  ENV = "production"
-  CACHE_TTL_SECONDS = "120"
-  HTTP_TIMEOUT_SECONDS = "10"
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-  processes = ["app"]
-
-  [http_service.concurrency]
-    type = "requests"
-    hard_limit = 250
-    soft_limit = 200
+  processes = ['app']
 
 [[vm]]
-  memory = "256mb"
-  cpu_kind = "shared"
+  memory = '1gb'
+  cpu_kind = 'shared'
   cpus = 1
+  memory_mb = 256

@@ -1,35 +1,14 @@
-# Build stage
-FROM golang:1.22-alpine AS builder
+ARG GO_VERSION=1
+FROM golang:${GO_VERSION}-bookworm as builder
 
-WORKDIR /app
-
-# Install ca-certificates for HTTPS requests to MTA APIs
-RUN apk --no-cache add ca-certificates
-
-# Download dependencies first (better layer caching)
+WORKDIR /usr/src/app
 COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy source code
+RUN go mod download && go mod verify
 COPY . .
+RUN go build -v -o /run-app .
 
-# Build the binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o server ./cmd/server
 
-# Runtime stage - minimal image
-FROM scratch
+FROM debian:bookworm
 
-# Copy CA certificates for HTTPS
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-WORKDIR /app
-
-# Copy the binary
-COPY --from=builder /app/server .
-
-# Copy data files
-COPY data/ ./data/
-
-EXPOSE 8080
-
-ENTRYPOINT ["./server"]
+COPY --from=builder /run-app /usr/local/bin/
+CMD ["run-app"]

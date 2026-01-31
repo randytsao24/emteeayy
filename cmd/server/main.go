@@ -15,6 +15,7 @@ import (
 	"github.com/randytsao24/emteeayy/internal/config"
 	"github.com/randytsao24/emteeayy/internal/location"
 	"github.com/randytsao24/emteeayy/internal/transit"
+	"github.com/randytsao24/emteeayy/web"
 )
 
 func main() {
@@ -60,7 +61,7 @@ func main() {
 	}
 
 	// Create router with all routes and middleware
-	router := api.NewRouter(cfg, zipSvc, stopSvc, subwaySvc, busSvc)
+	router := api.NewRouter(cfg, zipSvc, stopSvc, subwaySvc, busSvc, web.FS)
 
 	// Create server with timeouts
 	server := &http.Server{

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>emteeayy - NYC Transit</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+    }
+
+    .tagline {
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    .clock {
+      color: #4a90d9;
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .search-box {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 16px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      background: #0f0f23;
+      color: #fff;
+      outline: none;
+    }
+
+    input[type="text"]::placeholder {
+      color: #555;
+    }
+
+    input[type="text"]:focus {
+      box-shadow: 0 0 0 2px #4a90d9;
+    }
+
+    button {
+      padding: 14px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #4a90d9;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #5ba0e9;
+    }
+
+    .btn-secondary {
+      background: #2d2d44;
+      color: #ccc;
+      width: 100%;
+    }
+
+    .btn-secondary:hover {
+      background: #3d3d54;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .divider {
+      text-align: center;
+      color: #555;
+      margin: 15px 0;
+      font-size: 0.85rem;
+    }
+
+    .error {
+      background: #4a1c1c;
+      color: #ff6b6b;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid #333;
+      border-top-color: #4a90d9;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .results {
+      margin-top: 20px;
+    }
+
+    .station {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .station-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .station-name {
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .station-distance {
+      color: #888;
+      font-size: 0.85rem;
+    }
+
+    .direction {
+      margin-bottom: 10px;
+    }
+
+    .direction:last-child {
+      margin-bottom: 0;
+    }
+
+    .direction-label {
+      font-size: 0.75rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .trains {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .train {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0f0f23;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    .line-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .train-time {
+      font-size: 0.9rem;
+    }
+
+    .no-arrivals {
+      color: #666;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .location-info {
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+      margin-bottom: 15px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #2d2d44;
+      color: #555;
+      font-size: 0.8rem;
+    }
+
+    footer a {
+      color: #4a90d9;
+      text-decoration: none;
+    }
+
+    /* Subway line colors */
+    .line-1, .line-2, .line-3 { background: #ee352e; }
+    .line-4, .line-5, .line-6 { background: #00933c; }
+    .line-7 { background: #b933ad; }
+    .line-A, .line-C, .line-E { background: #0039a6; }
+    .line-B, .line-D, .line-F, .line-M { background: #ff6319; }
+    .line-G { background: #6cbe45; }
+    .line-J, .line-Z { background: #996633; }
+    .line-L { background: #a7a9ac; }
+    .line-N, .line-Q, .line-R, .line-W { background: #fccc0a; color: #000; }
+    .line-S { background: #808183; }
+    .line-SIR { background: #0039a6; font-size: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>emteeayy</h1>
+      <p class="tagline">NYC subway arrivals, no fluff</p>
+      <p id="clock" class="clock"></p>
+    </header>
+
+    <div class="search-box">
+      <form id="zip-form">
+        <div class="input-group">
+          <input type="text" id="zip-input" placeholder="Enter NYC zip code" maxlength="5" pattern="[0-9]{5}">
+          <button type="submit" class="btn-primary">Go</button>
+        </div>
+      </form>
+      <div class="divider">or</div>
+      <button id="location-btn" class="btn-secondary">Use my location</button>
+    </div>
+
+    <div id="location-info" class="location-info" style="display: none;"></div>
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="loading" class="loading" style="display: none;">
+      <div class="spinner"></div>
+      <div>Finding nearby trains...</div>
+    </div>
+    <div id="results" class="results"></div>
+
+    <footer>
+      Real-time data from <a href="https://new.mta.info/developers" target="_blank">MTA</a> &middot; 
+      <a href="/api" target="_blank">API</a>
+    </footer>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    const zipInput = document.getElementById('zip-input');
+    const zipForm = document.getElementById('zip-form');
+    const locationBtn = document.getElementById('location-btn');
+    const resultsDiv = document.getElementById('results');
+    const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
+    const locationInfo = document.getElementById('location-info');
+
+    // Line colors for badges
+    const lineColors = {
+      '1': '#ee352e', '2': '#ee352e', '3': '#ee352e',
+      '4': '#00933c', '5': '#00933c', '6': '#00933c',
+      '7': '#b933ad',
+      'A': '#0039a6', 'C': '#0039a6', 'E': '#0039a6',
+      'B': '#ff6319', 'D': '#ff6319', 'F': '#ff6319', 'M': '#ff6319',
+      'G': '#6cbe45',
+      'J': '#996633', 'Z': '#996633',
+      'L': '#a7a9ac',
+      'N': '#fccc0a', 'Q': '#fccc0a', 'R': '#fccc0a', 'W': '#fccc0a',
+      'S': '#808183', 'FS': '#808183', 'GS': '#808183', 'H': '#808183',
+      'SI': '#0039a6', 'SIR': '#0039a6'
+    };
+
+    function showError(msg) {
+      errorDiv.textContent = msg;
+      errorDiv.style.display = 'block';
+      loadingDiv.style.display = 'none';
+    }
+
+    function clearError() {
+      errorDiv.style.display = 'none';
+    }
+
+    function showLoading(show) {
+      loadingDiv.style.display = show ? 'block' : 'none';
+      if (show) {
+        resultsDiv.innerHTML = '';
+        clearError();
+      }
+    }
+
+    function getLineColor(line) {
+      return lineColors[line] || '#666';
+    }
+
+    function isLightColor(line) {
+      return ['N', 'Q', 'R', 'W'].includes(line);
+    }
+
+    function formatTime(minutes) {
+      if (minutes === 0) return 'now';
+      if (minutes === 1) return '1 min';
+      return `${minutes} min`;
+    }
+
+    function renderResults(data) {
+      if (!data.stations || data.stations.length === 0) {
+        resultsDiv.innerHTML = '<p class="no-arrivals">No subway stations found nearby. Try a different location.</p>';
+        return;
+      }
+
+      let html = '';
+      for (const station of data.stations) {
+        html += `<div class="station">
+          <div class="station-header">
+            <span class="station-name">${station.stop_name || station.stop_id}</span>
+            <span class="station-distance">${station.distance_miles?.toFixed(2) || '?'} mi</span>
+          </div>`;
+
+        const hasNorthbound = station.northbound && station.northbound.length > 0;
+        const hasSouthbound = station.southbound && station.southbound.length > 0;
+
+        if (!hasNorthbound && !hasSouthbound) {
+          html += '<p class="no-arrivals">No upcoming arrivals</p>';
+        } else {
+          // Render northbound
+          if (hasNorthbound) {
+            html += `<div class="direction">
+              <div class="direction-label">Northbound / Manhattan</div>
+              <div class="trains">`;
+            for (const arr of station.northbound.slice(0, 4)) {
+              const line = arr.route || '?';
+              const color = getLineColor(line);
+              const textColor = isLightColor(line) ? '#000' : '#fff';
+              html += `<div class="train">
+                <span class="line-badge" style="background:${color};color:${textColor}">${line}</span>
+                <span class="train-time">${formatTime(arr.minutes_away)}</span>
+              </div>`;
+            }
+            html += '</div></div>';
+          }
+
+          // Render southbound
+          if (hasSouthbound) {
+            html += `<div class="direction">
+              <div class="direction-label">Southbound / Brooklyn</div>
+              <div class="trains">`;
+            for (const arr of station.southbound.slice(0, 4)) {
+              const line = arr.route || '?';
+              const color = getLineColor(line);
+              const textColor = isLightColor(line) ? '#000' : '#fff';
+              html += `<div class="train">
+                <span class="line-badge" style="background:${color};color:${textColor}">${line}</span>
+                <span class="train-time">${formatTime(arr.minutes_away)}</span>
+              </div>`;
+            }
+            html += '</div></div>';
+          }
+        }
+        html += '</div>';
+      }
+      resultsDiv.innerHTML = html;
+    }
+
+    async function fetchByZip(zip) {
+      showLoading(true);
+      locationInfo.style.display = 'none';
+      
+      try {
+        const resp = await fetch(`${API_BASE}/transit/subway/near/${zip}`);
+        const data = await resp.json();
+        
+        if (!resp.ok) {
+          throw new Error(data.message || data.error || 'Failed to fetch');
+        }
+        
+        showLoading(false);
+        if (data.location) {
+          const city = data.location.city || '';
+          const borough = data.location.borough || 'NYC';
+          const display = city && city !== borough ? `${city}, ${borough}` : borough;
+          locationInfo.textContent = `${display} (${zip})`;
+          locationInfo.style.display = 'block';
+        }
+        renderResults(data);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    async function fetchByCoords(lat, lng) {
+      showLoading(true);
+      
+      try {
+        const resp = await fetch(`${API_BASE}/transit/subway/near?lat=${lat}&lng=${lng}`);
+        const data = await resp.json();
+        
+        if (!resp.ok) {
+          throw new Error(data.message || data.error || 'Failed to fetch');
+        }
+        
+        showLoading(false);
+        locationInfo.textContent = `Near ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        locationInfo.style.display = 'block';
+        renderResults(data);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    zipForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const zip = zipInput.value.trim();
+      if (!/^\d{5}$/.test(zip)) {
+        showError('Please enter a valid 5-digit zip code');
+        return;
+      }
+      fetchByZip(zip);
+    });
+
+    locationBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        showError('Geolocation is not supported by your browser');
+        return;
+      }
+
+      locationBtn.disabled = true;
+      locationBtn.textContent = 'Getting location...';
+      clearError();
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          locationBtn.disabled = false;
+          locationBtn.textContent = 'Use my location';
+          fetchByCoords(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          locationBtn.disabled = false;
+          locationBtn.textContent = 'Use my location';
+          let msg = 'Could not get your location';
+          if (err.code === err.PERMISSION_DENIED) {
+            msg = 'Location access denied. Please allow location access or enter a zip code.';
+          }
+          showError(msg);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+    // Auto-focus zip input
+    zipInput.focus();
+
+    // Clock
+    const clockEl = document.getElementById('clock');
+    function updateClock() {
+      const now = new Date();
+      clockEl.textContent = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"io/fs"
 	"net/http"
 	"time"
 
@@ -17,6 +18,7 @@ func NewRouter(
 	stopSvc *location.StopService,
 	subwaySvc *transit.SubwayService,
 	busSvc *transit.BusService,
+	webFS fs.FS,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -26,8 +28,15 @@ func NewRouter(
 	locationHandler := handlers.NewLocationHandler(zipSvc, stopSvc)
 	transitHandler := handlers.NewTransitHandler(subwaySvc, busSvc, stopSvc, zipSvc)
 
+	// Serve frontend (if provided)
+	if webFS != nil {
+		mux.Handle("GET /", http.FileServer(http.FS(webFS)))
+	} else {
+		mux.HandleFunc("GET /", rootHandler.Index)
+	}
+
 	// Core routes
-	mux.HandleFunc("GET /", rootHandler.Index)
+	mux.HandleFunc("GET /api", rootHandler.Index)
 	mux.HandleFunc("GET /health", healthHandler.Health)
 
 	// Location routes (subway stops)

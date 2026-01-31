@@ -121,6 +121,33 @@
       font-size: 0.85rem;
     }
 
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      background: #0f0f23;
+      border: 2px solid transparent;
+      color: #888;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .tab.active {
+      border-color: #4a90d9;
+      color: #fff;
+      background: #1a1a2e;
+    }
+
+    .tab:hover:not(.active) {
+      background: #1a1a2e;
+      color: #aaa;
+    }
+
     .error {
       background: #4a1c1c;
       color: #ff6b6b;
@@ -154,26 +181,26 @@
       margin-top: 20px;
     }
 
-    .station {
+    .station, .bus-stop {
       background: #16213e;
       border-radius: 12px;
       padding: 16px;
       margin-bottom: 12px;
     }
 
-    .station-header {
+    .station-header, .stop-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
     }
 
-    .station-name {
+    .station-name, .stop-name {
       font-size: 1.1rem;
       font-weight: 500;
     }
 
-    .station-distance {
+    .station-distance, .stop-distance {
       color: #888;
       font-size: 0.85rem;
     }
@@ -226,6 +253,46 @@
       font-size: 0.9rem;
     }
 
+    .bus-arrival {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #2d2d44;
+    }
+
+    .bus-arrival:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .bus-info {
+      flex: 1;
+    }
+
+    .bus-route {
+      display: inline-block;
+      background: #0039a6;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-right: 8px;
+    }
+
+    .bus-destination {
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
+    .bus-time {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #4a90d9;
+      white-space: nowrap;
+    }
+
     .no-arrivals {
       color: #666;
       font-style: italic;
@@ -271,11 +338,15 @@
   <div class="container">
     <header>
       <h1>emteeayy</h1>
-      <p class="tagline">NYC subway arrivals, no fluff</p>
+      <p class="tagline">NYC transit arrivals, no fluff</p>
       <p id="clock" class="clock"></p>
     </header>
 
     <div class="search-box">
+      <div class="tabs">
+        <button class="tab active" data-mode="subway">Subway</button>
+        <button class="tab" data-mode="bus">Bus</button>
+      </div>
       <form id="zip-form">
         <div class="input-group">
           <input type="text" id="zip-input" placeholder="Enter NYC zip code" maxlength="5" pattern="[0-9]{5}">
@@ -290,7 +361,7 @@
     <div id="error" class="error" style="display: none;"></div>
     <div id="loading" class="loading" style="display: none;">
       <div class="spinner"></div>
-      <div>Finding nearby trains...</div>
+      <div id="loading-text">Finding nearby trains...</div>
     </div>
     <div id="results" class="results"></div>
 
@@ -307,10 +378,16 @@
     const locationBtn = document.getElementById('location-btn');
     const resultsDiv = document.getElementById('results');
     const loadingDiv = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
     const errorDiv = document.getElementById('error');
     const locationInfo = document.getElementById('location-info');
+    const tabs = document.querySelectorAll('.tab');
 
-    // Line colors for badges
+    let currentMode = 'subway';
+    let lastZip = null;
+    let lastCoords = null;
+
+    // Line colors for subway badges
     const lineColors = {
       '1': '#ee352e', '2': '#ee352e', '3': '#ee352e',
       '4': '#00933c', '5': '#00933c', '6': '#00933c',
@@ -325,6 +402,22 @@
       'SI': '#0039a6', 'SIR': '#0039a6'
     };
 
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentMode = tab.dataset.mode;
+        
+        // Re-fetch if we have a location
+        if (lastZip) {
+          fetchByZip(lastZip);
+        } else if (lastCoords) {
+          fetchByCoords(lastCoords.lat, lastCoords.lng);
+        }
+      });
+    });
+
     function showError(msg) {
       errorDiv.textContent = msg;
       errorDiv.style.display = 'block';
@@ -337,6 +430,7 @@
 
     function showLoading(show) {
       loadingDiv.style.display = show ? 'block' : 'none';
+      loadingText.textContent = currentMode === 'subway' ? 'Finding nearby trains...' : 'Finding nearby buses...';
       if (show) {
         resultsDiv.innerHTML = '';
         clearError();
@@ -357,7 +451,7 @@
       return `${minutes} min`;
     }
 
-    function renderResults(data) {
+    function renderSubwayResults(data) {
       if (!data.stations || data.stations.length === 0) {
         resultsDiv.innerHTML = '<p class="no-arrivals">No subway stations found nearby. Try a different location.</p>';
         return;
@@ -377,7 +471,6 @@
         if (!hasNorthbound && !hasSouthbound) {
           html += '<p class="no-arrivals">No upcoming arrivals</p>';
         } else {
-          // Render northbound
           if (hasNorthbound) {
             html += `<div class="direction">
               <div class="direction-label">Northbound / Manhattan</div>
@@ -394,7 +487,6 @@
             html += '</div></div>';
           }
 
-          // Render southbound
           if (hasSouthbound) {
             html += `<div class="direction">
               <div class="direction-label">Southbound / Brooklyn</div>
@@ -416,12 +508,66 @@
       resultsDiv.innerHTML = html;
     }
 
+    function renderBusResults(data) {
+      if (!data.arrivals || data.arrivals.length === 0) {
+        resultsDiv.innerHTML = '<p class="no-arrivals">No buses found nearby. Try a different location or increase the search radius.</p>';
+        return;
+      }
+
+      // Group arrivals by stop
+      const byStop = {};
+      for (const arr of data.arrivals) {
+        const key = arr.stop_name || arr.stop_id;
+        if (!byStop[key]) byStop[key] = [];
+        byStop[key].push(arr);
+      }
+
+      let html = '';
+      for (const [stopName, arrivals] of Object.entries(byStop)) {
+        html += `<div class="bus-stop">
+          <div class="stop-header">
+            <span class="stop-name">${stopName}</span>
+          </div>`;
+
+        for (const arr of arrivals.slice(0, 5)) {
+          const dest = arr.destination || '';
+          // Shorten destination text
+          const shortDest = dest.length > 30 ? dest.substring(0, 30) + '...' : dest;
+          html += `<div class="bus-arrival">
+            <div class="bus-info">
+              <span class="bus-route">${arr.route}</span>
+              <span class="bus-destination">${shortDest}</span>
+            </div>
+            <span class="bus-time">${formatTime(arr.minutes_away)}</span>
+          </div>`;
+        }
+        html += '</div>';
+      }
+      resultsDiv.innerHTML = html;
+    }
+
+    function updateLocationDisplay(data, zip) {
+      if (data.location) {
+        const city = data.location.city || '';
+        const borough = data.location.borough || 'NYC';
+        const display = city && city !== borough ? `${city}, ${borough}` : borough;
+        locationInfo.textContent = `${display} (${zip})`;
+        locationInfo.style.display = 'block';
+      }
+    }
+
     async function fetchByZip(zip) {
       showLoading(true);
       locationInfo.style.display = 'none';
+      lastZip = zip;
+      lastCoords = null;
+      
+      const endpoint = currentMode === 'subway' 
+        ? `/transit/subway/near/${zip}`
+        : `/transit/bus/near/${zip}`;
       
       try {
-        const resp = await fetch(`${API_BASE}/transit/subway/near/${zip}`);
+        const resp = await fetch(`${API_BASE}${endpoint}`);
         const data = await resp.json();
         
         if (!resp.ok) {
@@ -429,14 +575,13 @@
         }
         
         showLoading(false);
-        if (data.location) {
-          const city = data.location.city || '';
-          const borough = data.location.borough || 'NYC';
-          const display = city && city !== borough ? `${city}, ${borough}` : borough;
-          locationInfo.textContent = `${display} (${zip})`;
-          locationInfo.style.display = 'block';
+        updateLocationDisplay(data, zip);
+        
+        if (currentMode === 'subway') {
+          renderSubwayResults(data);
+        } else {
+          renderBusResults(data);
         }
-        renderResults(data);
       } catch (err) {
         showError(err.message);
       }
@@ -444,9 +589,15 @@
 
     async function fetchByCoords(lat, lng) {
       showLoading(true);
+      lastCoords = { lat, lng };
+      lastZip = null;
+      
+      const endpoint = currentMode === 'subway'
+        ? `/transit/subway/near?lat=${lat}&lng=${lng}`
+        : `/transit/bus/near?lat=${lat}&lng=${lng}`;
       
       try {
-        const resp = await fetch(`${API_BASE}/transit/subway/near?lat=${lat}&lng=${lng}`);
+        const resp = await fetch(`${API_BASE}${endpoint}`);
         const data = await resp.json();
         
         if (!resp.ok) {
@@ -456,7 +607,12 @@
         showLoading(false);
         locationInfo.textContent = `Near ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         locationInfo.style.display = 'block';
-        renderResults(data);
+        
+        if (currentMode === 'subway') {
+          renderSubwayResults(data);
+        } else {
+          renderBusResults(data);
+        }
       } catch (err) {
         showError(err.message);
       }

@@ -2,6 +2,8 @@
 
 Real-time MTA transit tracking for NYC.
 
+Current URL (will change): https://emteeayy.fly.dev
+
 ## Quick Start
 
 ```bash
@@ -17,30 +19,11 @@ Server starts at http://localhost:3000
 ## Endpoints
 
 ### Core
-| Endpoint | Description |
-|----------|-------------|
-| `GET /` | API info |
+
+| Endpoint      | Description  |
+| ------------- | ------------ |
+| `GET /`       | API info     |
 | `GET /health` | Health check |
-
-### Location
-| Endpoint | Description |
-|----------|-------------|
-| `GET /transit/location/zip/{zipcode}` | Find stops near zip code |
-| `GET /transit/location/zip/{zipcode}/closest?limit=N` | Get N closest stops |
-| `GET /transit/location/zipcodes/all` | List all zip codes |
-| `GET /transit/location/boroughs` | List boroughs |
-
-### Subway (Real-time)
-| Endpoint | Description |
-|----------|-------------|
-| `GET /transit/subway/j-train` | J/Z arrivals at Woodhaven Blvd |
-| `GET /transit/subway/station/{stopId}` | Arrivals for any station |
-
-### Bus (Real-time)
-| Endpoint | Description |
-|----------|-------------|
-| `GET /transit/bus/arrivals` | Woodhaven area bus arrivals |
-| `GET /transit/bus/stops` | Woodhaven stops and routes |
 
 ## Config
 

@@ -5,25 +5,33 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 )
 
-// Woodhaven area bus stops
-var woodhavenBusStops = map[string]string{
-	"jamaicaWoodhaven":  "502494", // Jamaica Ave & Woodhaven Blvd
-	"myrtleWoodhaven":   "502528", // Myrtle Ave & Woodhaven Blvd
-	"91stWoodhaven":     "504080", // 91st Ave & Woodhaven Blvd
-	"101stWoodhaven":    "504067", // 101st Ave & Woodhaven Blvd
-}
+const (
+	defaultBusRadius = 400 // meters
+	maxBusStops      = 5
+)
 
-var woodhavenRoutes = []string{"Q11", "Q52", "Q53", "Q55", "Q56"}
+// BusStop represents a bus stop from the MTA API
+type BusStop struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Lat       float64  `json:"lat"`
+	Lng       float64  `json:"lng"`
+	Direction string   `json:"direction,omitempty"`
+	Routes    []string `json:"routes,omitempty"`
+}
 
 // BusArrival represents an upcoming bus arrival
 type BusArrival struct {
 	Route           string    `json:"route"`
 	Destination     string    `json:"destination"`
 	StopID          string    `json:"stop_id"`
+	StopName        string    `json:"stop_name,omitempty"`
 	StopsAway       int       `json:"stops_away"`
+	Feet            int       `json:"feet_away"`
 	ExpectedArrival time.Time `json:"expected_arrival"`
 	MinutesAway     int       `json:"minutes_away"`
 }
@@ -31,15 +39,13 @@ type BusArrival struct {
 // BusService fetches real-time bus arrivals from MTA SIRI API
 type BusService struct {
 	apiKey  string
-	baseURL string
 	client  *http.Client
 }
 
 // NewBusService creates a new bus service
 func NewBusService(apiKey string, timeout time.Duration) *BusService {
 	return &BusService{
-		apiKey:  apiKey,
-		baseURL: "https://bustime.mta.info/api/siri/stop-monitoring.json",
+		apiKey: apiKey,
 		client: &http.Client{
 			Timeout: timeout,
 		},
@@ -49,6 +55,81 @@ func NewBusService(apiKey string, timeout time.Duration) *BusService {
 // HasAPIKey returns true if the service has an API key configured
 func (s *BusService) HasAPIKey() bool {
 	return s.apiKey != ""
+}
+
+// FindStopsNear finds bus stops near a location
+func (s *BusService) FindStopsNear(lat, lng float64, radiusMeters int) ([]BusStop, error) {
+	if s.apiKey == "" {
+		return nil, fmt.Errorf("MTA_BUS_API_KEY not configured")
+	}
+
+	if radiusMeters <= 0 {
+		radiusMeters = defaultBusRadius
+	}
+
+	params := url.Values{}
+	params.Set("key", s.apiKey)
+	params.Set("lat", fmt.Sprintf("%f", lat))
+	params.Set("lon", fmt.Sprintf("%f", lng))
+	params.Set("radius", fmt.Sprintf("%d", radiusMeters))
+
+	apiURL := "https://bustime.mta.info/api/where/stops-for-location.json?" + params.Encode()
+	resp, err := s.client.Get(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetching stops: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var result stopsForLocationResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("parsing response: %w", err)
+	}
+
+	var stops []BusStop
+	for _, stop := range result.Data.Stops {
+		stops = append(stops, BusStop{
+			ID:        stop.ID,
+			Name:      stop.Name,
+			Lat:       stop.Lat,
+			Lng:       stop.Lon,
+			Direction: stop.Direction,
+		})
+	}
+
+	return stops, nil
+}
+
+// GetArrivalsNear finds stops near a location and fetches arrivals for each
+func (s *BusService) GetArrivalsNear(lat, lng float64, radiusMeters int) ([]BusArrival, error) {
+	stops, err := s.FindStopsNear(lat, lng, radiusMeters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Limit number of stops to query
+	if len(stops) > maxBusStops {
+		stops = stops[:maxBusStops]
+	}
+
+	var allArrivals []BusArrival
+	for _, stop := range stops {
+		arrivals, err := s.GetArrivalsForStop(stop.ID)
+		if err != nil {
+			continue
+		}
+		// Add stop name to each arrival
+		for i := range arrivals {
+			arrivals[i].StopName = stop.Name
+		}
+		allArrivals = append(allArrivals, arrivals...)
+	}
+
+	// Sort by arrival time
+	sort.Slice(allArrivals, func(i, j int) bool {
+		return allArrivals[i].ExpectedArrival.Before(allArrivals[j].ExpectedArrival)
+	})
+
+	return allArrivals, nil
 }
 
 // GetArrivalsForStop fetches arrivals for a specific stop
@@ -62,7 +143,8 @@ func (s *BusService) GetArrivalsForStop(stopID string) ([]BusArrival, error) {
 	params.Set("MonitoringRef", stopID)
 	params.Set("version", "2")
 
-	resp, err := s.client.Get(s.baseURL + "?" + params.Encode())
+	apiURL := "https://bustime.mta.info/api/siri/stop-monitoring.json?" + params.Encode()
+	resp, err := s.client.Get(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching bus data: %w", err)
 	}
@@ -78,35 +160,6 @@ func (s *BusService) GetArrivalsForStop(stopID string) ([]BusArrival, error) {
 	}
 
 	return s.parseArrivals(result, stopID), nil
-}
-
-// GetWoodhavenArrivals fetches arrivals for all Woodhaven area stops
-func (s *BusService) GetWoodhavenArrivals() (map[string][]BusArrival, error) {
-	if s.apiKey == "" {
-		return nil, fmt.Errorf("MTA_BUS_API_KEY not configured")
-	}
-
-	results := make(map[string][]BusArrival)
-
-	for name, stopID := range woodhavenBusStops {
-		arrivals, err := s.GetArrivalsForStop(stopID)
-		if err != nil {
-			continue // Skip failed stops
-		}
-		results[name] = arrivals
-	}
-
-	return results, nil
-}
-
-// GetWoodhavenStops returns the configured Woodhaven stops
-func (s *BusService) GetWoodhavenStops() map[string]string {
-	return woodhavenBusStops
-}
-
-// GetWoodhavenRoutes returns the configured Woodhaven routes
-func (s *BusService) GetWoodhavenRoutes() []string {
-	return woodhavenRoutes
 }
 
 func (s *BusService) parseArrivals(resp siriResponse, stopID string) []BusArrival {
@@ -126,16 +179,29 @@ func (s *BusService) parseArrivals(resp siriResponse, stopID string) []BusArriva
 			expectedTime = journey.MonitoredCall.ExpectedDepartureTime
 		}
 
+		// Skip entries with no valid arrival time
+		if expectedTime.IsZero() {
+			continue
+		}
+
+		route := getFirstString(journey.PublishedLineName)
+		destination := getFirstString(journey.DestinationName)
+
 		stopsAway := 0
+		feetAway := 0
 		if journey.MonitoredCall.Extensions.Distances.StopsFromCall != nil {
 			stopsAway = *journey.MonitoredCall.Extensions.Distances.StopsFromCall
 		}
+		if journey.MonitoredCall.Extensions.Distances.DistanceFromCall != nil {
+			feetAway = *journey.MonitoredCall.Extensions.Distances.DistanceFromCall
+		}
 
 		arrivals = append(arrivals, BusArrival{
-			Route:           journey.PublishedLineName,
-			Destination:     journey.DestinationName,
+			Route:           route,
+			Destination:     destination,
 			StopID:          stopID,
 			StopsAway:       stopsAway,
+			Feet:            feetAway,
 			ExpectedArrival: expectedTime,
 			MinutesAway:     int(expectedTime.Sub(now).Minutes()),
 		})
@@ -144,7 +210,34 @@ func (s *BusService) parseArrivals(resp siriResponse, stopID string) []BusArriva
 	return arrivals
 }
 
-// SIRI API response structures
+// getFirstString handles fields that can be string or []string
+func getFirstString(v any) string {
+	switch val := v.(type) {
+	case string:
+		return val
+	case []any:
+		if len(val) > 0 {
+			if s, ok := val[0].(string); ok {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
+// API response structures
+type stopsForLocationResponse struct {
+	Data struct {
+		Stops []struct {
+			ID        string  `json:"id"`
+			Name      string  `json:"name"`
+			Lat       float64 `json:"lat"`
+			Lon       float64 `json:"lon"`
+			Direction string  `json:"direction"`
+		} `json:"stops"`
+	} `json:"data"`
+}
+
 type siriResponse struct {
 	Siri struct {
 		ServiceDelivery struct {
@@ -158,14 +251,15 @@ type siriResponse struct {
 }
 
 type monitoredVehicleJourney struct {
-	PublishedLineName string `json:"PublishedLineName"`
-	DestinationName   string `json:"DestinationName"`
+	PublishedLineName any `json:"PublishedLineName"`
+	DestinationName   any `json:"DestinationName"`
 	MonitoredCall     struct {
 		ExpectedArrivalTime   time.Time `json:"ExpectedArrivalTime"`
 		ExpectedDepartureTime time.Time `json:"ExpectedDepartureTime"`
 		Extensions            struct {
 			Distances struct {
-				StopsFromCall *int `json:"StopsFromCall"`
+				StopsFromCall    *int `json:"StopsFromCall"`
+				DistanceFromCall *int `json:"DistanceFromCall"`
 			} `json:"Distances"`
 		} `json:"Extensions"`
 	} `json:"MonitoredCall"`

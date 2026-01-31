@@ -24,13 +24,13 @@ func NewRouter(
 	healthHandler := handlers.NewHealthHandler()
 	rootHandler := handlers.NewRootHandler()
 	locationHandler := handlers.NewLocationHandler(zipSvc, stopSvc)
-	transitHandler := handlers.NewTransitHandler(subwaySvc, busSvc)
+	transitHandler := handlers.NewTransitHandler(subwaySvc, busSvc, zipSvc)
 
 	// Core routes
 	mux.HandleFunc("GET /", rootHandler.Index)
 	mux.HandleFunc("GET /health", healthHandler.Health)
 
-	// Location routes
+	// Location routes (subway stops)
 	mux.HandleFunc("GET /transit/location/info", locationHandler.GetLocationInfo)
 	mux.HandleFunc("GET /transit/location/boroughs", locationHandler.GetBoroughs)
 	mux.HandleFunc("GET /transit/location/zipcodes/all", locationHandler.GetAllZipCodes)
@@ -41,9 +41,10 @@ func NewRouter(
 	mux.HandleFunc("GET /transit/subway/j-train", transitHandler.GetJTrainArrivals)
 	mux.HandleFunc("GET /transit/subway/station/{stopId}", transitHandler.GetSubwayArrivals)
 
-	// Bus routes
-	mux.HandleFunc("GET /transit/bus/arrivals", transitHandler.GetBusArrivals)
-	mux.HandleFunc("GET /transit/bus/stops", transitHandler.GetBusStops)
+	// Bus routes - dynamic location-based
+	mux.HandleFunc("GET /transit/bus/near/{zipcode}", transitHandler.GetBusArrivalsNearZip)
+	mux.HandleFunc("GET /transit/bus/near", transitHandler.GetBusArrivalsNearCoords)
+	mux.HandleFunc("GET /transit/bus/stops/{zipcode}", transitHandler.GetBusStopsNear)
 
 	// Apply middleware stack
 	handler := Chain(mux,

@@ -2,20 +2,24 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/randytsao24/emteeayy/internal/location"
 	"github.com/randytsao24/emteeayy/internal/transit"
 )
 
 type TransitHandler struct {
-	subway *transit.SubwayService
-	bus    *transit.BusService
+	subway   *transit.SubwayService
+	bus      *transit.BusService
+	zipCodes *location.ZipCodeService
 }
 
-func NewTransitHandler(subway *transit.SubwayService, bus *transit.BusService) *TransitHandler {
+func NewTransitHandler(subway *transit.SubwayService, bus *transit.BusService, zips *location.ZipCodeService) *TransitHandler {
 	return &TransitHandler{
-		subway: subway,
-		bus:    bus,
+		subway:   subway,
+		bus:      bus,
+		zipCodes: zips,
 	}
 }
 
@@ -47,7 +51,6 @@ func (h *TransitHandler) GetSubwayArrivals(w http.ResponseWriter, r *http.Reques
 
 // GetJTrainArrivals returns J/Z train arrivals for Woodhaven Blvd
 func (h *TransitHandler) GetJTrainArrivals(w http.ResponseWriter, r *http.Request) {
-	// J15 is Woodhaven Blvd station
 	arrivals, err := h.subway.GetArrivals("J15", []string{"J", "Z"})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -57,7 +60,6 @@ func (h *TransitHandler) GetJTrainArrivals(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Split by direction
 	var manhattan, brooklyn []transit.Arrival
 	for _, arr := range arrivals {
 		if strings.HasSuffix(arr.StopID, "N") {
@@ -67,7 +69,6 @@ func (h *TransitHandler) GetJTrainArrivals(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// Limit to next 5 each
 	if len(manhattan) > 5 {
 		manhattan = manhattan[:5]
 	}
@@ -86,8 +87,8 @@ func (h *TransitHandler) GetJTrainArrivals(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// GetBusArrivals returns bus arrivals for Woodhaven area
-func (h *TransitHandler) GetBusArrivals(w http.ResponseWriter, r *http.Request) {
+// GetBusArrivalsNearZip returns bus arrivals near a zip code
+func (h *TransitHandler) GetBusArrivalsNearZip(w http.ResponseWriter, r *http.Request) {
 	if !h.bus.HasAPIKey() {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error":   "Bus service unavailable",
@@ -96,7 +97,25 @@ func (h *TransitHandler) GetBusArrivals(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	arrivals, err := h.bus.GetWoodhavenArrivals()
+	zipCode := r.PathValue("zipcode")
+	if len(zipCode) != 5 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid zip code format",
+		})
+		return
+	}
+
+	zip, found := h.zipCodes.Get(zipCode)
+	if !found {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error":   "Zip code not found",
+			"message": "Zip code " + zipCode + " is not in our NYC database",
+		})
+		return
+	}
+
+	radius := parseIntQueryParam(r, "radius", 400, 100, 1000)
+	arrivals, err := h.bus.GetArrivalsNear(zip.Lat, zip.Lng, radius)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   "Failed to fetch bus arrivals",
@@ -106,16 +125,132 @@ func (h *TransitHandler) GetBusArrivals(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"success":  true,
-		"arrivals": arrivals,
+		"success":       true,
+		"zip_code":      zipCode,
+		"location":      zip,
+		"radius_meters": radius,
+		"arrivals":      arrivals,
+		"count":         len(arrivals),
 	})
 }
 
-// GetBusStops returns Woodhaven bus stop info
-func (h *TransitHandler) GetBusStops(w http.ResponseWriter, r *http.Request) {
+// GetBusArrivalsNearCoords returns bus arrivals near lat/lng coordinates
+func (h *TransitHandler) GetBusArrivalsNearCoords(w http.ResponseWriter, r *http.Request) {
+	if !h.bus.HasAPIKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error":   "Bus service unavailable",
+			"message": "MTA_BUS_API_KEY not configured",
+		})
+		return
+	}
+
+	latStr := r.URL.Query().Get("lat")
+	lngStr := r.URL.Query().Get("lng")
+
+	if latStr == "" || lngStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "lat and lng query parameters are required",
+		})
+		return
+	}
+
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid lat parameter",
+		})
+		return
+	}
+
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid lng parameter",
+		})
+		return
+	}
+
+	radius := parseIntQueryParam(r, "radius", 400, 100, 1000)
+	arrivals, err := h.bus.GetArrivalsNear(lat, lng, radius)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error":   "Failed to fetch bus arrivals",
+			"message": err.Error(),
+		})
+		return
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"stops":   h.bus.GetWoodhavenStops(),
-		"routes":  h.bus.GetWoodhavenRoutes(),
+		"success":       true,
+		"lat":           lat,
+		"lng":           lng,
+		"radius_meters": radius,
+		"arrivals":      arrivals,
+		"count":         len(arrivals),
 	})
+}
+
+// GetBusStopsNear returns bus stops near a location
+func (h *TransitHandler) GetBusStopsNear(w http.ResponseWriter, r *http.Request) {
+	if !h.bus.HasAPIKey() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"error": "Bus service unavailable",
+		})
+		return
+	}
+
+	zipCode := r.PathValue("zipcode")
+	if len(zipCode) != 5 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid zip code format",
+		})
+		return
+	}
+
+	zip, found := h.zipCodes.Get(zipCode)
+	if !found {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error": "Zip code not found",
+		})
+		return
+	}
+
+	radius := parseIntQueryParam(r, "radius", 400, 100, 1000)
+	stops, err := h.bus.FindStopsNear(zip.Lat, zip.Lng, radius)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error":   "Failed to find bus stops",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success":       true,
+		"zip_code":      zipCode,
+		"location":      zip,
+		"radius_meters": radius,
+		"stops":         stops,
+		"count":         len(stops),
+	})
+}
+
+func parseIntQueryParam(r *http.Request, name string, defaultVal, min, max int) int {
+	str := r.URL.Query().Get(name)
+	if str == "" {
+		return defaultVal
+	}
+
+	val, err := strconv.Atoi(str)
+	if err != nil {
+		return defaultVal
+	}
+
+	if val < min {
+		return min
+	}
+	if val > max {
+		return max
+	}
+	return val
 }

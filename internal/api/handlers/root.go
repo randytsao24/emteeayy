@@ -24,16 +24,17 @@ func (h *RootHandler) Index(w http.ResponseWriter, r *http.Request) {
 				"GET /transit/location/info":                  "Service info",
 				"GET /transit/location/boroughs":              "List all boroughs",
 				"GET /transit/location/zipcodes/all":          "List all zip codes",
-				"GET /transit/location/zip/{zipcode}":         "Find stops near zip code",
-				"GET /transit/location/zip/{zipcode}/closest": "Get N closest stops",
+				"GET /transit/location/zip/{zipcode}":         "Find subway stops near zip",
+				"GET /transit/location/zip/{zipcode}/closest": "Get N closest subway stops",
 			},
 			"subway": map[string]string{
-				"GET /transit/subway/j-train":            "J/Z arrivals at Woodhaven Blvd",
-				"GET /transit/subway/station/{stopId}":  "Arrivals for any station",
+				"GET /transit/subway/j-train":           "J/Z arrivals at Woodhaven Blvd",
+				"GET /transit/subway/station/{stopId}": "Arrivals for any station",
 			},
 			"bus": map[string]string{
-				"GET /transit/bus/arrivals": "Bus arrivals for Woodhaven area",
-				"GET /transit/bus/stops":    "Woodhaven bus stops and routes",
+				"GET /transit/bus/near/{zipcode}":      "Bus arrivals near zip code",
+				"GET /transit/bus/near?lat=X&lng=Y":    "Bus arrivals near coordinates",
+				"GET /transit/bus/stops/{zipcode}":     "Bus stops near zip code",
 			},
 		},
 	})

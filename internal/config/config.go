@@ -1,4 +1,4 @@
-// Package config handles application configuration from environment variables.
+// Package config handles application configuration from environment variables
 package config
 
 import (
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Config holds all application configuration.
+// Config holds all application configuration
 type Config struct {
 	Port         string
 	Env          string
@@ -16,7 +16,7 @@ type Config struct {
 	HTTPTimeout  time.Duration
 }
 
-// Load reads configuration from environment variables with sensible defaults.
+// Load reads configuration from environment variables with sensible defaults
 func Load() *Config {
 	return &Config{
 		Port:         getEnv("PORT", "3000"),
@@ -27,12 +27,12 @@ func Load() *Config {
 	}
 }
 
-// IsDevelopment returns true if running in development mode.
+// IsDevelopment returns true if running in development mode
 func (c *Config) IsDevelopment() bool {
 	return c.Env == "development"
 }
 
-// Validate checks that required configuration is present.
+// Validate checks that required configuration is present
 func (c *Config) Validate() error {
 	return nil
 }

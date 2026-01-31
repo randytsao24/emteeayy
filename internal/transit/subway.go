@@ -225,3 +225,92 @@ func sortArrivals(arrivals []Arrival) {
 		return arrivals[i].ArrivalTime.Before(arrivals[j].ArrivalTime)
 	})
 }
+
+const (
+	defaultSubwayRadius = 800 // meters (~0.5 mile)
+	maxSubwayStops      = 5
+)
+
+// SubwayStop represents a subway station with optional distance info
+type SubwayStop struct {
+	ID             string  `json:"stop_id"`
+	Name           string  `json:"stop_name"`
+	Lat            float64 `json:"lat"`
+	Lng            float64 `json:"lng"`
+	DistanceMeters float64 `json:"distance_meters,omitempty"`
+	DistanceMiles  float64 `json:"distance_miles,omitempty"`
+}
+
+// StationArrivals contains arrivals for a single station
+type StationArrivals struct {
+	StopID         string    `json:"stop_id"`
+	StopName       string    `json:"stop_name"`
+	DistanceMeters float64   `json:"distance_meters,omitempty"`
+	DistanceMiles  float64   `json:"distance_miles,omitempty"`
+	Northbound     []Arrival `json:"northbound"`
+	Southbound     []Arrival `json:"southbound"`
+}
+
+// GetArrivalsForStations fetches arrivals for multiple stations
+func (s *SubwayService) GetArrivalsForStations(stopIDs []string) ([]StationArrivals, error) {
+	if len(stopIDs) == 0 {
+		return nil, nil
+	}
+
+	// Limit number of stations to query
+	if len(stopIDs) > maxSubwayStops {
+		stopIDs = stopIDs[:maxSubwayStops]
+	}
+
+	// Create a set of stop IDs we care about (both N and S directions)
+	stopSet := make(map[string]bool)
+	for _, id := range stopIDs {
+		stopSet[id+"N"] = true
+		stopSet[id+"S"] = true
+	}
+
+	// Fetch all feeds to get comprehensive coverage
+	allArrivals := make(map[string][]Arrival) // stopID -> arrivals
+
+	for feedName := range feedURLs {
+		arrivals, err := s.fetchFeed(feedName, "")
+		if err != nil {
+			continue
+		}
+
+		for _, arr := range arrivals {
+			if stopSet[arr.StopID] {
+				allArrivals[arr.StopID] = append(allArrivals[arr.StopID], arr)
+			}
+		}
+	}
+
+	// Organize arrivals by station
+	var results []StationArrivals
+	for _, stopID := range stopIDs {
+		northID := stopID + "N"
+		southID := stopID + "S"
+
+		northArrivals := allArrivals[northID]
+		southArrivals := allArrivals[southID]
+
+		sortArrivals(northArrivals)
+		sortArrivals(southArrivals)
+
+		// Limit to 5 arrivals per direction
+		if len(northArrivals) > 5 {
+			northArrivals = northArrivals[:5]
+		}
+		if len(southArrivals) > 5 {
+			southArrivals = southArrivals[:5]
+		}
+
+		results = append(results, StationArrivals{
+			StopID:     stopID,
+			Northbound: northArrivals,
+			Southbound: southArrivals,
+		})
+	}
+
+	return results, nil
+}

@@ -24,7 +24,7 @@ func NewRouter(
 	healthHandler := handlers.NewHealthHandler()
 	rootHandler := handlers.NewRootHandler()
 	locationHandler := handlers.NewLocationHandler(zipSvc, stopSvc)
-	transitHandler := handlers.NewTransitHandler(subwaySvc, busSvc, zipSvc)
+	transitHandler := handlers.NewTransitHandler(subwaySvc, busSvc, stopSvc, zipSvc)
 
 	// Core routes
 	mux.HandleFunc("GET /", rootHandler.Index)
@@ -37,9 +37,14 @@ func NewRouter(
 	mux.HandleFunc("GET /transit/location/zip/{zipcode}/closest", locationHandler.GetClosestStops)
 	mux.HandleFunc("GET /transit/location/zip/{zipcode}", locationHandler.GetStopsByZip)
 
-	// Subway routes
+	// Subway routes - station-specific
 	mux.HandleFunc("GET /transit/subway/j-train", transitHandler.GetJTrainArrivals)
 	mux.HandleFunc("GET /transit/subway/station/{stopId}", transitHandler.GetSubwayArrivals)
+
+	// Subway routes - dynamic location-based
+	mux.HandleFunc("GET /transit/subway/near/{zipcode}", transitHandler.GetSubwayArrivalsNearZip)
+	mux.HandleFunc("GET /transit/subway/near", transitHandler.GetSubwayArrivalsNearCoords)
+	mux.HandleFunc("GET /transit/subway/stops/{zipcode}", transitHandler.GetSubwayStopsNear)
 
 	// Bus routes - dynamic location-based
 	mux.HandleFunc("GET /transit/bus/near/{zipcode}", transitHandler.GetBusArrivalsNearZip)

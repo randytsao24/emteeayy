@@ -9,16 +9,26 @@ import (
 	"github.com/randytsao24/emteeayy/internal/transit"
 )
 
+const (
+	defaultSubwayRadius = 800  // ~0.5 mile in meters
+	maxSubwayRadius     = 3200 // ~2 miles
+	minSubwayRadius     = 100
+	defaultStationsLimit = 3
+	maxStationsLimit     = 5
+)
+
 type TransitHandler struct {
 	subway   *transit.SubwayService
 	bus      *transit.BusService
+	stops    *location.StopService
 	zipCodes *location.ZipCodeService
 }
 
-func NewTransitHandler(subway *transit.SubwayService, bus *transit.BusService, zips *location.ZipCodeService) *TransitHandler {
+func NewTransitHandler(subway *transit.SubwayService, bus *transit.BusService, stops *location.StopService, zips *location.ZipCodeService) *TransitHandler {
 	return &TransitHandler{
 		subway:   subway,
 		bus:      bus,
+		stops:    stops,
 		zipCodes: zips,
 	}
 }
@@ -84,6 +94,211 @@ func (h *TransitHandler) GetJTrainArrivals(w http.ResponseWriter, r *http.Reques
 			"manhattan_bound": manhattan,
 			"brooklyn_bound":  brooklyn,
 		},
+	})
+}
+
+// GetSubwayArrivalsNearZip returns subway arrivals near a zip code
+func (h *TransitHandler) GetSubwayArrivalsNearZip(w http.ResponseWriter, r *http.Request) {
+	zipCode := r.PathValue("zipcode")
+	if len(zipCode) != 5 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid zip code format",
+		})
+		return
+	}
+
+	zip, found := h.zipCodes.Get(zipCode)
+	if !found {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error":   "Zip code not found",
+			"message": "Zip code " + zipCode + " is not in our NYC database",
+		})
+		return
+	}
+
+	radius := parseIntQueryParam(r, "radius", defaultSubwayRadius, minSubwayRadius, maxSubwayRadius)
+	limit := parseIntQueryParam(r, "limit", defaultStationsLimit, 1, maxStationsLimit)
+
+	// Find nearby subway stations
+	nearbyStops := h.stops.FindNearby(zip.Lat, zip.Lng, float64(radius))
+	if len(nearbyStops) > limit {
+		nearbyStops = nearbyStops[:limit]
+	}
+
+	if len(nearbyStops) == 0 {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success":       true,
+			"zip_code":      zipCode,
+			"location":      zip,
+			"radius_meters": radius,
+			"stations":      []any{},
+			"count":         0,
+			"message":       "No subway stations found within radius",
+		})
+		return
+	}
+
+	// Extract stop IDs for arrival lookup
+	stopIDs := make([]string, len(nearbyStops))
+	for i, stop := range nearbyStops {
+		stopIDs[i] = stop.ID
+	}
+
+	// Fetch arrivals for all nearby stations
+	stationArrivals, err := h.subway.GetArrivalsForStations(stopIDs)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error":   "Failed to fetch subway arrivals",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Enrich station arrivals with stop info
+	for i := range stationArrivals {
+		if i < len(nearbyStops) {
+			stationArrivals[i].StopName = nearbyStops[i].Name
+			stationArrivals[i].DistanceMeters = nearbyStops[i].DistanceMeters
+			stationArrivals[i].DistanceMiles = nearbyStops[i].DistanceMiles
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success":       true,
+		"zip_code":      zipCode,
+		"location":      zip,
+		"radius_meters": radius,
+		"stations":      stationArrivals,
+		"count":         len(stationArrivals),
+	})
+}
+
+// GetSubwayArrivalsNearCoords returns subway arrivals near lat/lng coordinates
+func (h *TransitHandler) GetSubwayArrivalsNearCoords(w http.ResponseWriter, r *http.Request) {
+	latStr := r.URL.Query().Get("lat")
+	lngStr := r.URL.Query().Get("lng")
+
+	if latStr == "" || lngStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "lat and lng query parameters are required",
+		})
+		return
+	}
+
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid lat parameter",
+		})
+		return
+	}
+
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid lng parameter",
+		})
+		return
+	}
+
+	radius := parseIntQueryParam(r, "radius", defaultSubwayRadius, minSubwayRadius, maxSubwayRadius)
+	limit := parseIntQueryParam(r, "limit", defaultStationsLimit, 1, maxStationsLimit)
+
+	// Find nearby subway stations
+	nearbyStops := h.stops.FindNearby(lat, lng, float64(radius))
+	if len(nearbyStops) > limit {
+		nearbyStops = nearbyStops[:limit]
+	}
+
+	if len(nearbyStops) == 0 {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"success":       true,
+			"lat":           lat,
+			"lng":           lng,
+			"radius_meters": radius,
+			"stations":      []any{},
+			"count":         0,
+			"message":       "No subway stations found within radius",
+		})
+		return
+	}
+
+	// Extract stop IDs for arrival lookup
+	stopIDs := make([]string, len(nearbyStops))
+	for i, stop := range nearbyStops {
+		stopIDs[i] = stop.ID
+	}
+
+	// Fetch arrivals for all nearby stations
+	stationArrivals, err := h.subway.GetArrivalsForStations(stopIDs)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error":   "Failed to fetch subway arrivals",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Enrich station arrivals with stop info
+	for i := range stationArrivals {
+		if i < len(nearbyStops) {
+			stationArrivals[i].StopName = nearbyStops[i].Name
+			stationArrivals[i].DistanceMeters = nearbyStops[i].DistanceMeters
+			stationArrivals[i].DistanceMiles = nearbyStops[i].DistanceMiles
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success":       true,
+		"lat":           lat,
+		"lng":           lng,
+		"radius_meters": radius,
+		"stations":      stationArrivals,
+		"count":         len(stationArrivals),
+	})
+}
+
+// GetSubwayStopsNear returns subway stops near a zip code
+func (h *TransitHandler) GetSubwayStopsNear(w http.ResponseWriter, r *http.Request) {
+	zipCode := r.PathValue("zipcode")
+	if len(zipCode) != 5 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "Invalid zip code format",
+		})
+		return
+	}
+
+	zip, found := h.zipCodes.Get(zipCode)
+	if !found {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"error": "Zip code not found",
+		})
+		return
+	}
+
+	radius := parseIntQueryParam(r, "radius", defaultSubwayRadius, minSubwayRadius, maxSubwayRadius)
+	stops := h.stops.FindNearby(zip.Lat, zip.Lng, float64(radius))
+
+	// Convert to simpler response format
+	var stopsResponse []transit.SubwayStop
+	for _, stop := range stops {
+		stopsResponse = append(stopsResponse, transit.SubwayStop{
+			ID:             stop.ID,
+			Name:           stop.Name,
+			Lat:            stop.Lat,
+			Lng:            stop.Lng,
+			DistanceMeters: stop.DistanceMeters,
+			DistanceMiles:  stop.DistanceMiles,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success":       true,
+		"zip_code":      zipCode,
+		"location":      zip,
+		"radius_meters": radius,
+		"stops":         stopsResponse,
+		"count":         len(stopsResponse),
 	})
 }
 

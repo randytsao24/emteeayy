@@ -1,7 +1,7 @@
 # Fly.io configuration for emteeayy
 # See https://fly.io/docs/reference/configuration/
 
-app = "emteeayy"
+app = "app-aged-pond-1142"
 primary_region = "ewr"  # Newark, NJ - closest to NYC for MTA API latency
 
 [build]

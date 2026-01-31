@@ -7,13 +7,19 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/randytsao24/emteeayy/internal/api"
 	"github.com/randytsao24/emteeayy/internal/config"
+	"github.com/randytsao24/emteeayy/internal/location"
+	"github.com/randytsao24/emteeayy/internal/transit"
 )
 
 func main() {
+	// Load .env file (ignore error if not found)
+	_ = godotenv.Load()
 	// Configure structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
@@ -26,8 +32,35 @@ func main() {
 		log.Fatal("Configuration error: ", err)
 	}
 
+	// Find data directory
+	dataDir := findDataDir()
+
+	// Initialize location services
+	zipSvc := location.NewZipCodeService()
+	if err := zipSvc.Load(filepath.Join(dataDir, "nyc-zipcodes.json")); err != nil {
+		log.Fatal("Failed to load zip codes: ", err)
+	}
+	slog.Info("loaded zip codes", "count", zipSvc.Count())
+
+	stopSvc := location.NewStopService()
+	if err := stopSvc.Load(filepath.Join(dataDir, "stops.txt")); err != nil {
+		log.Fatal("Failed to load stops: ", err)
+	}
+	slog.Info("loaded subway stops", "total", stopSvc.Count(), "stations", stopSvc.ParentStationCount())
+
+	// Initialize transit services
+	subwaySvc := transit.NewSubwayService(cfg.HTTPTimeout)
+	slog.Info("initialized subway service")
+
+	busSvc := transit.NewBusService(cfg.MTABusAPIKey, cfg.HTTPTimeout)
+	if busSvc.HasAPIKey() {
+		slog.Info("initialized bus service")
+	} else {
+		slog.Warn("bus service disabled - MTA_BUS_API_KEY not set")
+	}
+
 	// Create router with all routes and middleware
-	router := api.NewRouter(cfg)
+	router := api.NewRouter(cfg, zipSvc, stopSvc, subwaySvc, busSvc)
 
 	// Create server with timeouts
 	server := &http.Server{
@@ -45,4 +78,20 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal("Server failed to start: ", err)
 	}
+}
+
+func findDataDir() string {
+	if _, err := os.Stat("data"); err == nil {
+		return "data"
+	}
+
+	exe, err := os.Executable()
+	if err == nil {
+		dir := filepath.Join(filepath.Dir(exe), "data")
+		if _, err := os.Stat(dir); err == nil {
+			return dir
+		}
+	}
+
+	return "data"
 }

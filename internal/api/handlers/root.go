@@ -28,8 +28,10 @@ func (h *RootHandler) Index(w http.ResponseWriter, r *http.Request) {
 				"GET /transit/location/zip/{zipcode}/closest": "Get N closest subway stops",
 			},
 			"subway": map[string]string{
-				"GET /transit/subway/j-train":           "J/Z arrivals at Woodhaven Blvd",
-				"GET /transit/subway/station/{stopId}": "Arrivals for any station",
+				"GET /transit/subway/station/{stopId}":  "Arrivals for any station",
+				"GET /transit/subway/near/{zipcode}":    "Subway arrivals near zip code",
+				"GET /transit/subway/near?lat=X&lng=Y":  "Subway arrivals near coordinates",
+				"GET /transit/subway/stops/{zipcode}":   "Subway stops near zip code",
 			},
 			"bus": map[string]string{
 				"GET /transit/bus/near/{zipcode}":      "Bus arrivals near zip code",

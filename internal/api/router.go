@@ -38,7 +38,6 @@ func NewRouter(
 	mux.HandleFunc("GET /transit/location/zip/{zipcode}", locationHandler.GetStopsByZip)
 
 	// Subway routes - station-specific
-	mux.HandleFunc("GET /transit/subway/j-train", transitHandler.GetJTrainArrivals)
 	mux.HandleFunc("GET /transit/subway/station/{stopId}", transitHandler.GetSubwayArrivals)
 
 	// Subway routes - dynamic location-based

@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/randytsao24/emteeayy/internal/location"
 	"github.com/randytsao24/emteeayy/internal/transit"
@@ -56,44 +55,6 @@ func (h *TransitHandler) GetSubwayArrivals(w http.ResponseWriter, r *http.Reques
 		"success":  true,
 		"stop_id":  stopID,
 		"arrivals": arrivals,
-	})
-}
-
-// GetJTrainArrivals returns J/Z train arrivals for Woodhaven Blvd
-func (h *TransitHandler) GetJTrainArrivals(w http.ResponseWriter, r *http.Request) {
-	arrivals, err := h.subway.GetArrivals("J15", []string{"J", "Z"})
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"error":   "Failed to fetch J train arrivals",
-			"message": err.Error(),
-		})
-		return
-	}
-
-	var manhattan, brooklyn []transit.Arrival
-	for _, arr := range arrivals {
-		if strings.HasSuffix(arr.StopID, "N") {
-			manhattan = append(manhattan, arr)
-		} else {
-			brooklyn = append(brooklyn, arr)
-		}
-	}
-
-	if len(manhattan) > 5 {
-		manhattan = manhattan[:5]
-	}
-	if len(brooklyn) > 5 {
-		brooklyn = brooklyn[:5]
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"success": true,
-		"station": "Woodhaven Blvd",
-		"stop_id": "J15",
-		"arrivals": map[string]any{
-			"manhattan_bound": manhattan,
-			"brooklyn_bound":  brooklyn,
-		},
 	})
 }
 

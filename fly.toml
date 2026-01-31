@@ -1,17 +1,12 @@
-# fly.toml app configuration file generated for app-aged-pond-1142 on 2026-01-31T19:52:41Z
+# fly.toml app configuration file generated for emteeayy on 2026-01-31T20:01:22Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'app-aged-pond-1142'
+app = 'emteeayy'
 primary_region = 'iad'
 
 [build]
-  [build.args]
-    GO_VERSION = '1.25.6'
-
-[env]
-  PORT = '8080'
 
 [http_service]
   internal_port = 8080
@@ -25,4 +20,4 @@ primary_region = 'iad'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 256
+  memory_mb = 1024

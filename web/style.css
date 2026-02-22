@@ -1,0 +1,454 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f5f3ef;
+  color: #3d3a36;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+h1 {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: #2c2925;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.tagline {
+  color: #8a857d;
+  font-size: 0.95rem;
+}
+
+.clock {
+  color: #6b8f71;
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Search box ── */
+
+.search-box {
+  background: #fffef9;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: #f0ede8;
+  border: none;
+  border-radius: 10px;
+  color: #6b665e;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab.active {
+  background: #3d3a36;
+  color: #f5f3ef;
+}
+
+.tab:hover:not(.active) {
+  background: #e8e4dd;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 14px 18px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  border: 2px solid #e8e4dd;
+  border-radius: 12px;
+  background: #fff;
+  color: #3d3a36;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]::placeholder {
+  color: #b5b0a7;
+}
+
+input[type="text"]:focus {
+  border-color: #6b8f71;
+}
+
+/* ── Buttons ── */
+
+button {
+  padding: 14px 24px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 500;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #6b8f71;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #5a7a5f;
+}
+
+.btn-secondary {
+  background: #6b8f71;
+  color: #fff;
+  width: 100%;
+}
+
+.btn-secondary:hover {
+  background: #5a7a5f;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #6b8f71;
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 400;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  border-radius: 0;
+}
+
+.btn-link:hover {
+  color: #5a7a5f;
+}
+
+/* ── Divider ── */
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #b5b0a7;
+  margin: 16px 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e8e4dd;
+}
+
+/* ── Radius select ── */
+
+.radius-select {
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6b665e;
+  background: #f0ede8;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 10px;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.radius-select:focus {
+  box-shadow: 0 0 0 2px #6b8f7140;
+}
+
+/* ── State: error / loading ── */
+
+.error {
+  background: #fdf2f2;
+  color: #b54a4a;
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 48px 24px;
+  color: #8a857d;
+}
+
+.spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e8e4dd;
+  border-top-color: #6b8f71;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Results ── */
+
+.results {
+  margin-top: 8px;
+}
+
+.location-info {
+  text-align: center;
+  color: #8a857d;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.no-arrivals {
+  color: #7a756c;
+  font-style: italic;
+  font-size: 0.9rem;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.last-updated {
+  text-align: center;
+  color: #a09a91;
+  font-size: 0.8rem;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+/* ── Station cards ── */
+
+.station,
+.bus-stop {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e2dc;
+}
+
+.station-header,
+.stop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eceae5;
+}
+
+.station-name,
+.stop-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1816;
+}
+
+.station-distance,
+.stop-distance {
+  color: #6b665e;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.station-nav-link {
+  color: #1a1816;
+  text-decoration: none;
+}
+
+.station-nav-link:hover {
+  color: #6b8f71;
+  text-decoration: underline;
+}
+
+.direction {
+  margin-bottom: 14px;
+}
+
+.direction:last-child {
+  margin-bottom: 0;
+}
+
+.direction-label {
+  font-size: 0.72rem;
+  color: #7a756c;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.trains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.train {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f7f5f2;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e8e5e0;
+}
+
+.line-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.train-time {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2a2725;
+}
+
+/* ── Bus cards ── */
+
+.bus-arrival {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #eceae5;
+}
+
+.bus-arrival:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.bus-info {
+  flex: 1;
+}
+
+.bus-route {
+  display: inline-block;
+  background: #3a6a87;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-right: 12px;
+}
+
+.bus-destination {
+  color: #5c574f;
+  font-size: 0.9rem;
+}
+
+.bus-time {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4a7a50;
+  white-space: nowrap;
+}
+
+/* ── Footer ── */
+
+footer {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #e8e4dd;
+  color: #a09a91;
+  font-size: 0.8rem;
+}
+
+footer p + p {
+  margin-top: 6px;
+}
+
+footer strong {
+  color: #6b8f71;
+  font-weight: 600;
+}
+
+footer a {
+  color: #6b8f71;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* ── Subway line colors ── */
+
+.line-1, .line-2, .line-3 { background: #ee352e; }
+.line-4, .line-5, .line-6 { background: #00933c; }
+.line-7                    { background: #b933ad; }
+.line-A, .line-C, .line-E  { background: #0039a6; }
+.line-B, .line-D, .line-F, .line-M { background: #ff6319; }
+.line-G                    { background: #6cbe45; }
+.line-J, .line-Z           { background: #996633; }
+.line-L                    { background: #a7a9ac; }
+.line-N, .line-Q, .line-R, .line-W { background: #fccc0a; color: #333; }
+.line-S                    { background: #808183; }
+.line-SIR                  { background: #0039a6; font-size: 0.5rem; }

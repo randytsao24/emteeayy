@@ -8,7 +8,6 @@ import (
 	"github.com/randytsao24/emteeayy/internal/api/handlers"
 	"github.com/randytsao24/emteeayy/internal/config"
 	"github.com/randytsao24/emteeayy/internal/location"
-	"github.com/randytsao24/emteeayy/internal/transit"
 )
 
 // NewRouter creates and configures the HTTP router with all routes and middleware
@@ -16,8 +15,8 @@ func NewRouter(
 	cfg *config.Config,
 	zipSvc *location.ZipCodeService,
 	stopSvc *location.StopService,
-	subwaySvc *transit.SubwayService,
-	busSvc *transit.BusService,
+	subwaySvc handlers.SubwayProvider,
+	busSvc handlers.BusProvider,
 	webFS fs.FS,
 ) http.Handler {
 	mux := http.NewServeMux()

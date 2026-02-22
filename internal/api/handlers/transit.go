@@ -9,21 +9,21 @@ import (
 )
 
 const (
-	defaultSubwayRadius = 800  // ~0.5 mile in meters
-	maxSubwayRadius     = 3200 // ~2 miles
-	minSubwayRadius     = 100
+	defaultSubwayRadius  = 800  // ~0.5 mile in meters
+	maxSubwayRadius      = 3200 // ~2 miles
+	minSubwayRadius      = 100
 	defaultStationsLimit = 3
 	maxStationsLimit     = 5
 )
 
 type TransitHandler struct {
-	subway   *transit.SubwayService
-	bus      *transit.BusService
+	subway   SubwayProvider
+	bus      BusProvider
 	stops    *location.StopService
 	zipCodes *location.ZipCodeService
 }
 
-func NewTransitHandler(subway *transit.SubwayService, bus *transit.BusService, stops *location.StopService, zips *location.ZipCodeService) *TransitHandler {
+func NewTransitHandler(subway SubwayProvider, bus BusProvider, stops *location.StopService, zips *location.ZipCodeService) *TransitHandler {
 	return &TransitHandler{
 		subway:   subway,
 		bus:      bus,

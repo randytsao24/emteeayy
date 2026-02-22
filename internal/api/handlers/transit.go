@@ -54,6 +54,9 @@ func (h *TransitHandler) GetSubwayArrivals(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	h.resolveDestinations(arrivals["northbound"])
+	h.resolveDestinations(arrivals["southbound"])
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success":  true,
 		"stop_id":  stopID,
@@ -128,6 +131,7 @@ func (h *TransitHandler) GetSubwayArrivalsNearZip(w http.ResponseWriter, r *http
 			stationArrivals[i].DistanceMiles = nearbyStops[i].DistanceMiles
 		}
 	}
+	h.resolveStationDestinations(stationArrivals)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success":       true,
@@ -215,6 +219,7 @@ func (h *TransitHandler) GetSubwayArrivalsNearCoords(w http.ResponseWriter, r *h
 			stationArrivals[i].DistanceMiles = nearbyStops[i].DistanceMiles
 		}
 	}
+	h.resolveStationDestinations(stationArrivals)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success":       true,
@@ -473,12 +478,37 @@ func (h *TransitHandler) GetSubwayArrivalsForStops(w http.ResponseWriter, r *htt
 			stationArrivals[i].Lng = stop.Lng
 		}
 	}
+	h.resolveStationDestinations(stationArrivals)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"success":  true,
 		"stations": stationArrivals,
 		"count":    len(stationArrivals),
 	})
+}
+
+func (h *TransitHandler) resolveDestinations(arrivals []transit.Arrival) {
+	for i := range arrivals {
+		if arrivals[i].Destination == "" {
+			continue
+		}
+		stop, ok := h.stops.GetByID(arrivals[i].Destination)
+		if !ok {
+			continue
+		}
+		name := stop.Name
+		if zip, found := h.zipCodes.FindNearest(stop.Lat, stop.Lng); found && zip.Borough != "" {
+			name += " (" + zip.Borough + ")"
+		}
+		arrivals[i].Destination = name
+	}
+}
+
+func (h *TransitHandler) resolveStationDestinations(stations []transit.StationArrivals) {
+	for i := range stations {
+		h.resolveDestinations(stations[i].Northbound)
+		h.resolveDestinations(stations[i].Southbound)
+	}
 }
 
 func parseIntQueryParam(r *http.Request, name string, defaultVal, min, max int) int {

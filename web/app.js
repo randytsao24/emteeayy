@@ -259,6 +259,20 @@ function transitApp() {
       return ["N", "Q", "R", "W"].includes(line);
     },
 
+    groupByDest(arrivals) {
+      if (!arrivals || arrivals.length === 0) return [];
+      const map = {};
+      for (const arr of arrivals) {
+        const dest = arr.destination || (arr.direction === "northbound" ? "Northbound" : "Southbound");
+        if (!map[dest]) map[dest] = [];
+        map[dest].push(arr);
+      }
+      return Object.entries(map).map(([dest, arrs]) => ({
+        dest,
+        arrivals: arrs,
+      }));
+    },
+
     formatTime(minutes) {
       if (minutes === 0) return "now";
       if (minutes === 1) return "1 min";

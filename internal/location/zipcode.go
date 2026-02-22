@@ -4,6 +4,7 @@ package location
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"sync"
 
@@ -110,6 +111,27 @@ func (s *ZipCodeService) Boroughs() []string {
 		}
 	}
 	return boroughs
+}
+
+// FindNearest returns the zip code closest to the given coordinates
+func (s *ZipCodeService) FindNearest(lat, lng float64) (models.ZipCode, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if len(s.zipCodes) == 0 {
+		return models.ZipCode{}, false
+	}
+
+	var best models.ZipCode
+	bestDist := math.MaxFloat64
+	for _, z := range s.zipCodes {
+		d := Haversine(lat, lng, z.Lat, z.Lng)
+		if d < bestDist {
+			bestDist = d
+			best = z
+		}
+	}
+	return best, true
 }
 
 // Count returns the number of loaded zip codes

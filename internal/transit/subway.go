@@ -45,6 +45,7 @@ type Arrival struct {
 	Direction   string    `json:"direction"`
 	ArrivalTime time.Time `json:"arrival_time"`
 	MinutesAway int       `json:"minutes_away"`
+	Destination string    `json:"destination,omitempty"`
 }
 
 // SubwayService fetches real-time subway arrivals
@@ -174,11 +175,18 @@ func (s *SubwayService) parseArrivals(feed *gtfs.FeedMessage, filterStopID strin
 		}
 
 		routeID := tripUpdate.GetTrip().GetRouteId()
+		stopTimeUpdates := tripUpdate.GetStopTimeUpdate()
 
-		for _, stopTimeUpdate := range tripUpdate.GetStopTimeUpdate() {
+		// The last StopTimeUpdate is the trip's terminus
+		terminusID := ""
+		if n := len(stopTimeUpdates); n > 0 {
+			lastID := stopTimeUpdates[n-1].GetStopId()
+			terminusID = strings.TrimRight(lastID, "NS")
+		}
+
+		for _, stopTimeUpdate := range stopTimeUpdates {
 			stopID := stopTimeUpdate.GetStopId()
 
-			// Filter by stop if specified
 			if filterStopID != "" && !strings.HasPrefix(stopID, filterStopID) {
 				continue
 			}
@@ -193,7 +201,7 @@ func (s *SubwayService) parseArrivals(feed *gtfs.FeedMessage, filterStopID strin
 
 			arrTime := time.Unix(arrivalTime, 0)
 			if arrTime.Before(now) {
-				continue // Skip past arrivals
+				continue
 			}
 
 			direction := "unknown"
@@ -209,6 +217,7 @@ func (s *SubwayService) parseArrivals(feed *gtfs.FeedMessage, filterStopID strin
 				Direction:   direction,
 				ArrivalTime: arrTime,
 				MinutesAway: int(arrTime.Sub(now).Minutes()),
+				Destination: terminusID,
 			})
 		}
 	}

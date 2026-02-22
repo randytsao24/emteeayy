@@ -161,54 +161,64 @@
               >
                 No upcoming arrivals
               </p>
-              <div
-                class="direction"
-                x-show="station.northbound && station.northbound.length > 0"
+              <template
+                x-for="group in groupByDest(station.northbound)"
+                :key="'n-' + group.dest"
               >
-                <div class="direction-label">Northbound / Manhattan</div>
-                <div class="trains">
-                  <template
-                    x-for="(arr, i) in (station.northbound || []).slice(0, 4)"
-                    :key="i"
-                  >
-                    <div class="train">
-                      <span
-                        class="line-badge"
-                        x-text="arr.route || '?'"
-                        :style="`background:${getLineColor(arr.route)};color:${isLightLine(arr.route) ? '#333' : '#fff'}`"
-                      ></span>
-                      <span
-                        class="train-time"
-                        x-text="formatTime(arr.minutes_away)"
-                      ></span>
-                    </div>
-                  </template>
+                <div
+                  class="direction"
+                  x-show="group.arrivals.length > 0"
+                >
+                  <div class="direction-label" x-text="'→ ' + group.dest"></div>
+                  <div class="trains">
+                    <template
+                      x-for="(arr, i) in group.arrivals.slice(0, 4)"
+                      :key="i"
+                    >
+                      <div class="train">
+                        <span
+                          class="line-badge"
+                          x-text="arr.route || '?'"
+                          :style="`background:${getLineColor(arr.route)};color:${isLightLine(arr.route) ? '#333' : '#fff'}`"
+                        ></span>
+                        <span
+                          class="train-time"
+                          x-text="formatTime(arr.minutes_away)"
+                        ></span>
+                      </div>
+                    </template>
+                  </div>
                 </div>
-              </div>
-              <div
-                class="direction"
-                x-show="station.southbound && station.southbound.length > 0"
+              </template>
+              <template
+                x-for="group in groupByDest(station.southbound)"
+                :key="'s-' + group.dest"
               >
-                <div class="direction-label">Southbound / Brooklyn</div>
-                <div class="trains">
-                  <template
-                    x-for="(arr, i) in (station.southbound || []).slice(0, 4)"
-                    :key="i"
-                  >
-                    <div class="train">
-                      <span
-                        class="line-badge"
-                        x-text="arr.route || '?'"
-                        :style="`background:${getLineColor(arr.route)};color:${isLightLine(arr.route) ? '#333' : '#fff'}`"
-                      ></span>
-                      <span
-                        class="train-time"
-                        x-text="formatTime(arr.minutes_away)"
-                      ></span>
-                    </div>
-                  </template>
+                <div
+                  class="direction"
+                  x-show="group.arrivals.length > 0"
+                >
+                  <div class="direction-label" x-text="'→ ' + group.dest"></div>
+                  <div class="trains">
+                    <template
+                      x-for="(arr, i) in group.arrivals.slice(0, 4)"
+                      :key="i"
+                    >
+                      <div class="train">
+                        <span
+                          class="line-badge"
+                          x-text="arr.route || '?'"
+                          :style="`background:${getLineColor(arr.route)};color:${isLightLine(arr.route) ? '#333' : '#fff'}`"
+                        ></span>
+                        <span
+                          class="train-time"
+                          x-text="formatTime(arr.minutes_away)"
+                        ></span>
+                      </div>
+                    </template>
+                  </div>
                 </div>
-              </div>
+              </template>
             </div>
           </template>
         </div>

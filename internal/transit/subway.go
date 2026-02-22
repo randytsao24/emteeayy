@@ -245,6 +245,8 @@ type SubwayStop struct {
 type StationArrivals struct {
 	StopID         string    `json:"stop_id"`
 	StopName       string    `json:"stop_name"`
+	Lat            float64   `json:"stop_lat,omitempty"`
+	Lng            float64   `json:"stop_lon,omitempty"`
 	DistanceMeters float64   `json:"distance_meters,omitempty"`
 	DistanceMiles  float64   `json:"distance_miles,omitempty"`
 	Northbound     []Arrival `json:"northbound"`

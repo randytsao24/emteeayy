@@ -119,6 +119,8 @@ func (h *TransitHandler) GetSubwayArrivalsNearZip(w http.ResponseWriter, r *http
 	for i := range stationArrivals {
 		if i < len(nearbyStops) {
 			stationArrivals[i].StopName = nearbyStops[i].Name
+			stationArrivals[i].Lat = nearbyStops[i].Lat
+			stationArrivals[i].Lng = nearbyStops[i].Lng
 			stationArrivals[i].DistanceMeters = nearbyStops[i].DistanceMeters
 			stationArrivals[i].DistanceMiles = nearbyStops[i].DistanceMiles
 		}
@@ -204,6 +206,8 @@ func (h *TransitHandler) GetSubwayArrivalsNearCoords(w http.ResponseWriter, r *h
 	for i := range stationArrivals {
 		if i < len(nearbyStops) {
 			stationArrivals[i].StopName = nearbyStops[i].Name
+			stationArrivals[i].Lat = nearbyStops[i].Lat
+			stationArrivals[i].Lng = nearbyStops[i].Lng
 			stationArrivals[i].DistanceMeters = nearbyStops[i].DistanceMeters
 			stationArrivals[i].DistanceMiles = nearbyStops[i].DistanceMiles
 		}

@@ -17,6 +17,7 @@ COPY --from=builder /run-app /usr/local/bin/
 COPY data/ ./data/
 
 ENV PORT=8080
+ENV ENV=production
 EXPOSE 8080
 
 CMD ["run-app"]

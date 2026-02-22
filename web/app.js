@@ -66,6 +66,7 @@ function transitApp() {
         this.error = "Please enter a valid 5-digit zip code";
         return;
       }
+      if (this.currentMode === "saved") this.currentMode = "subway";
       this.fetchByZip(zip);
     },
 
@@ -76,6 +77,7 @@ function transitApp() {
       }
       this.locating = true;
       this.error = null;
+      if (this.currentMode === "saved") this.currentMode = "subway";
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           this.locating = false;

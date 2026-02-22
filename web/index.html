@@ -25,6 +25,16 @@
         <p class="clock" x-text="clock"></p>
       </header>
 
+      <button
+        class="saved-btn"
+        :class="{ active: currentMode === 'saved' }"
+        @click="setMode('saved')"
+        x-show="favorites.length > 0"
+      >
+        &#9733;
+        <span x-text="'Saved stations (' + favorites.length + ')'"></span>
+      </button>
+
       <div class="search-box">
         <div class="tabs">
           <button
@@ -40,14 +50,6 @@
             @click="setMode('bus')"
           >
             Bus
-          </button>
-          <button
-            class="tab"
-            :class="{ active: currentMode === 'saved' }"
-            @click="setMode('saved')"
-            x-show="favorites.length > 0"
-          >
-            Saved
           </button>
           <select class="radius-select" x-model="radius" @change="refresh()">
             <option value="400">0.25 mi</option>
@@ -82,17 +84,12 @@
       <div class="error" x-show="error" x-text="error"></div>
 
       <div class="alerts-banner" x-show="alerts.length > 0" x-cloak>
-        <button
-          class="alerts-toggle"
-          @click="alertsExpanded = !alertsExpanded"
-        >
+        <button class="alerts-toggle" @click="alertsExpanded = !alertsExpanded">
           <span class="alerts-icon">&#9888;</span>
           <span
             x-text="alerts.length + ' service alert' + (alerts.length !== 1 ? 's' : '')"
           ></span>
-          <span
-            class="alerts-chevron"
-            :class="{ expanded: alertsExpanded }"
+          <span class="alerts-chevron" :class="{ expanded: alertsExpanded }"
             >&#9662;</span
           >
         </button>
@@ -141,7 +138,9 @@
                     :class="{ active: isFavorite(station.stop_id) }"
                     @click="toggleFavorite(station.stop_id, station.stop_name || station.stop_id)"
                     :title="isFavorite(station.stop_id) ? 'Remove from saved' : 'Save station'"
-                  >&#9733;</button>
+                  >
+                    &#9733;
+                  </button>
                   <a
                     class="station-name station-nav-link"
                     :href="`https://www.google.com/maps/dir/?api=1&destination=${station.stop_lat},${station.stop_lon}&travelmode=walking`"
@@ -252,15 +251,12 @@
 
       <footer>
         <p>
-          <strong>Attention!</strong> This website does NOT collect, store, or
-          share any of your data.
-        </p>
-        <p>
           Real-time data from
           <a href="https://new.mta.info/developers" target="_blank">MTA</a>
           &middot;
           <a href="/api" target="_blank">API</a>
         </p>
+        <p>This website does NOT collect, store, or share your data.</p>
       </footer>
     </div>
   </body>

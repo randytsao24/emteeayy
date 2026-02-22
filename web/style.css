@@ -6,6 +6,7 @@
 
 body {
   font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 17px;
   background: #f5f3ef;
   color: #3d3a36;
   min-height: 100vh;
@@ -13,7 +14,7 @@ body {
 }
 
 .container {
-  max-width: 520px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -26,7 +27,7 @@ header {
 
 h1 {
   font-family: "DM Serif Display", Georgia, serif;
-  font-size: 2.5rem;
+  font-size: 2.35rem;
   font-weight: 400;
   color: #2c2925;
   margin-bottom: 4px;
@@ -44,6 +45,38 @@ h1 {
   font-weight: 500;
   margin-top: 10px;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Saved stations button ── */
+
+.saved-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #fffef9;
+  border: 1px solid #e8e4dd;
+  border-radius: 12px;
+  color: #6b665e;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.saved-btn:hover {
+  background: #f7f5f0;
+  border-color: #d5d0c7;
+}
+
+.saved-btn.active {
+  background: #3d3a36;
+  color: #f5f3ef;
+  border-color: #3d3a36;
 }
 
 /* ── Search box ── */
@@ -545,6 +578,81 @@ footer a:hover {
 
 [x-cloak] {
   display: none !important;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 420px) {
+  body {
+    padding: 16px 10px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .search-box {
+    padding: 16px;
+  }
+
+  .tabs {
+    gap: 6px;
+  }
+
+  .tab {
+    padding: 10px 10px;
+    font-size: 0.82rem;
+  }
+
+  .radius-select {
+    padding: 10px 6px;
+    font-size: 0.88rem;
+  }
+
+  .station,
+  .bus-stop {
+    padding: 14px 14px;
+  }
+
+  .station-name,
+  .stop-name {
+    font-size: 1rem;
+  }
+
+  .station-nav-link {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+    display: inline-block;
+  }
+
+  .trains {
+    gap: 8px;
+  }
+
+  .train {
+    padding: 8px 10px;
+  }
+
+  .saved-btn {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 340px) {
+  .tabs {
+    flex-wrap: wrap;
+  }
+
+  .radius-select {
+    flex: 1;
+  }
+
+  .station-nav-link {
+    max-width: 140px;
+  }
 }
 
 .line-1, .line-2, .line-3 { background: #ee352e; }

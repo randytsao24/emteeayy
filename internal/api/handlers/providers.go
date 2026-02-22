@@ -14,3 +14,8 @@ type BusProvider interface {
 	FindStopsNear(lat, lng float64, radiusMeters int) ([]transit.BusStop, error)
 	GetArrivalsNear(lat, lng float64, radiusMeters int) ([]transit.BusArrival, error)
 }
+
+// AlertProvider abstracts the service alerts data source.
+type AlertProvider interface {
+	GetAlerts(routes []string) ([]transit.ServiceAlert, error)
+}

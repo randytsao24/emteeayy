@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MobilityData/gtfs-realtime-bindings/golang/gtfs"
+	"github.com/randytsao24/emteeayy/internal/cache"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -48,17 +49,19 @@ type Arrival struct {
 
 // SubwayService fetches real-time subway arrivals
 type SubwayService struct {
-	client  *http.Client
-	timeout time.Duration
+	client    *http.Client
+	timeout   time.Duration
+	feedCache *cache.Cache[[]byte]
 }
 
 // NewSubwayService creates a new subway service
-func NewSubwayService(timeout time.Duration) *SubwayService {
+func NewSubwayService(timeout time.Duration, cacheTTL time.Duration) *SubwayService {
 	return &SubwayService{
 		client: &http.Client{
 			Timeout: timeout,
 		},
-		timeout: timeout,
+		timeout:   timeout,
+		feedCache: cache.New[[]byte](cacheTTL),
 	}
 }
 
@@ -118,12 +121,30 @@ func (s *SubwayService) GetArrivalsForStation(baseStopID string) (map[string][]A
 }
 
 func (s *SubwayService) fetchFeed(feedName, filterStopID string) ([]Arrival, error) {
-	url, ok := feedURLs[feedName]
+	feedURL, ok := feedURLs[feedName]
 	if !ok {
 		return nil, fmt.Errorf("unknown feed: %s", feedName)
 	}
 
-	resp, err := s.client.Get(url)
+	body, err := s.fetchFeedBytes(feedName, feedURL)
+	if err != nil {
+		return nil, err
+	}
+
+	feed := &gtfs.FeedMessage{}
+	if err := proto.Unmarshal(body, feed); err != nil {
+		return nil, fmt.Errorf("parsing protobuf: %w", err)
+	}
+
+	return s.parseArrivals(feed, filterStopID), nil
+}
+
+func (s *SubwayService) fetchFeedBytes(feedName, feedURL string) ([]byte, error) {
+	if cached, ok := s.feedCache.Get(feedName); ok {
+		return cached, nil
+	}
+
+	resp, err := s.client.Get(feedURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching feed: %w", err)
 	}
@@ -138,12 +159,8 @@ func (s *SubwayService) fetchFeed(feedName, filterStopID string) ([]Arrival, err
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
 
-	feed := &gtfs.FeedMessage{}
-	if err := proto.Unmarshal(body, feed); err != nil {
-		return nil, fmt.Errorf("parsing protobuf: %w", err)
-	}
-
-	return s.parseArrivals(feed, filterStopID), nil
+	s.feedCache.Set(feedName, body)
+	return body, nil
 }
 
 func (s *SubwayService) parseArrivals(feed *gtfs.FeedMessage, filterStopID string) []Arrival {

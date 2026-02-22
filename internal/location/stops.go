@@ -158,6 +158,19 @@ func (s *StopService) ParentStationCount() int {
 	return count
 }
 
+// GetByID returns a stop by its ID
+func (s *StopService) GetByID(id string) (models.Stop, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, stop := range s.stops {
+		if stop.ID == id {
+			return stop, true
+		}
+	}
+	return models.Stop{}, false
+}
+
 // IsLoaded returns true if data has been loaded
 func (s *StopService) IsLoaded() bool {
 	s.mu.RLock()

@@ -1,0 +1,22 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/emteeayy ./cmd/server/main.go"
+  bin = "./tmp/emteeayy"
+  delay = 200
+  # Only rebuild when Go source changes
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "e2e", "data"]
+  kill_delay = "200ms"
+  rerun_delay = 500
+
+[log]
+  time = false
+
+[color]
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true

@@ -441,6 +441,112 @@ footer a:hover {
 
 /* ── Subway line colors ── */
 
+/* ── Alerts banner ── */
+
+.alerts-banner {
+  background: #fef9ef;
+  border: 1px solid #f0dca0;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.alerts-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: #8a7530;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.alerts-toggle:hover {
+  background: #fdf3dd;
+}
+
+.alerts-icon {
+  font-size: 1.1rem;
+}
+
+.alerts-chevron {
+  margin-left: auto;
+  transition: transform 0.2s;
+}
+
+.alerts-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.alerts-list {
+  padding: 0 16px 12px;
+}
+
+.alert-item {
+  padding: 10px 0;
+  border-top: 1px solid #f0dca0;
+}
+
+.alert-routes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.alert-header {
+  font-size: 0.85rem;
+  color: #5c5230;
+  line-height: 1.4;
+}
+
+.line-badge.small {
+  width: 20px;
+  height: 20px;
+  font-size: 0.65rem;
+}
+
+/* ── Favorites ── */
+
+.station-name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.favorite-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1.2rem;
+  color: #d1cdc5;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 0;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.favorite-btn:hover {
+  color: #e8b930;
+}
+
+.favorite-btn.active {
+  color: #e8b930;
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
 .line-1, .line-2, .line-3 { background: #ee352e; }
 .line-4, .line-5, .line-6 { background: #00933c; }
 .line-7                    { background: #b933ad; }

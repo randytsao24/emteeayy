@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/randytsao24/emteeayy/internal/location"
 	"github.com/randytsao24/emteeayy/internal/transit"
@@ -19,14 +20,16 @@ const (
 type TransitHandler struct {
 	subway   SubwayProvider
 	bus      BusProvider
+	alerts   AlertProvider
 	stops    *location.StopService
 	zipCodes *location.ZipCodeService
 }
 
-func NewTransitHandler(subway SubwayProvider, bus BusProvider, stops *location.StopService, zips *location.ZipCodeService) *TransitHandler {
+func NewTransitHandler(subway SubwayProvider, bus BusProvider, alerts AlertProvider, stops *location.StopService, zips *location.ZipCodeService) *TransitHandler {
 	return &TransitHandler{
 		subway:   subway,
 		bus:      bus,
+		alerts:   alerts,
 		stops:    stops,
 		zipCodes: zips,
 	}
@@ -412,6 +415,69 @@ func (h *TransitHandler) GetBusStopsNear(w http.ResponseWriter, r *http.Request)
 		"radius_meters": radius,
 		"stops":         stops,
 		"count":         len(stops),
+	})
+}
+
+// GetServiceAlerts returns active service alerts, optionally filtered by route
+func (h *TransitHandler) GetServiceAlerts(w http.ResponseWriter, r *http.Request) {
+	routesParam := r.URL.Query().Get("routes")
+	var routes []string
+	if routesParam != "" {
+		routes = strings.Split(routesParam, ",")
+	}
+
+	alerts, err := h.alerts.GetAlerts(routes)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error":   "Failed to fetch service alerts",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"alerts":  alerts,
+		"count":   len(alerts),
+	})
+}
+
+// GetSubwayArrivalsForStops returns arrivals for specific station IDs (used by favorites)
+func (h *TransitHandler) GetSubwayArrivalsForStops(w http.ResponseWriter, r *http.Request) {
+	stopsParam := r.URL.Query().Get("stops")
+	if stopsParam == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error": "stops query parameter is required (comma-separated stop IDs)",
+		})
+		return
+	}
+
+	stopIDs := strings.Split(stopsParam, ",")
+	if len(stopIDs) > maxStationsLimit {
+		stopIDs = stopIDs[:maxStationsLimit]
+	}
+
+	stationArrivals, err := h.subway.GetArrivalsForStations(stopIDs)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error":   "Failed to fetch arrivals",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	for i := range stationArrivals {
+		if stop, ok := h.stops.GetByID(stationArrivals[i].StopID); ok {
+			stationArrivals[i].StopName = stop.Name
+			stationArrivals[i].Lat = stop.Lat
+			stationArrivals[i].Lng = stop.Lng
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success":  true,
+		"stations": stationArrivals,
+		"count":    len(stationArrivals),
 	})
 }
 

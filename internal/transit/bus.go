@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"sort"
 	"time"
+
+	"github.com/randytsao24/emteeayy/internal/cache"
 )
 
 const (
@@ -38,17 +40,19 @@ type BusArrival struct {
 
 // BusService fetches real-time bus arrivals from MTA SIRI API
 type BusService struct {
-	apiKey  string
-	client  *http.Client
+	apiKey       string
+	client       *http.Client
+	arrivalCache *cache.Cache[[]BusArrival]
+	stopsCache   *cache.Cache[[]BusStop]
 }
 
 // NewBusService creates a new bus service
-func NewBusService(apiKey string, timeout time.Duration) *BusService {
+func NewBusService(apiKey string, timeout time.Duration, cacheTTL time.Duration) *BusService {
 	return &BusService{
-		apiKey: apiKey,
-		client: &http.Client{
-			Timeout: timeout,
-		},
+		apiKey:       apiKey,
+		client:       &http.Client{Timeout: timeout},
+		arrivalCache: cache.New[[]BusArrival](cacheTTL),
+		stopsCache:   cache.New[[]BusStop](cacheTTL),
 	}
 }
 
@@ -65,6 +69,11 @@ func (s *BusService) FindStopsNear(lat, lng float64, radiusMeters int) ([]BusSto
 
 	if radiusMeters <= 0 {
 		radiusMeters = defaultBusRadius
+	}
+
+	cacheKey := fmt.Sprintf("%.4f,%.4f,%d", lat, lng, radiusMeters)
+	if cached, ok := s.stopsCache.Get(cacheKey); ok {
+		return cached, nil
 	}
 
 	params := url.Values{}
@@ -96,6 +105,7 @@ func (s *BusService) FindStopsNear(lat, lng float64, radiusMeters int) ([]BusSto
 		})
 	}
 
+	s.stopsCache.Set(cacheKey, stops)
 	return stops, nil
 }
 
@@ -138,6 +148,10 @@ func (s *BusService) GetArrivalsForStop(stopID string) ([]BusArrival, error) {
 		return nil, fmt.Errorf("MTA_BUS_API_KEY not configured")
 	}
 
+	if cached, ok := s.arrivalCache.Get(stopID); ok {
+		return cached, nil
+	}
+
 	params := url.Values{}
 	params.Set("key", s.apiKey)
 	params.Set("MonitoringRef", stopID)
@@ -159,7 +173,9 @@ func (s *BusService) GetArrivalsForStop(stopID string) ([]BusArrival, error) {
 		return nil, fmt.Errorf("parsing response: %w", err)
 	}
 
-	return s.parseArrivals(result, stopID), nil
+	arrivals := s.parseArrivals(result, stopID)
+	s.arrivalCache.Set(stopID, arrivals)
+	return arrivals, nil
 }
 
 func (s *BusService) parseArrivals(resp siriResponse, stopID string) []BusArrival {

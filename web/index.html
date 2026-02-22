@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -21,7 +21,7 @@
     <div class="container" x-data="transitApp()">
       <header>
         <h1>emteeayy</h1>
-        <p class="tagline">nyc transit arrivals for the privacy-minded</p>
+        <p class="tagline">nyc transit arrivals without the fluff</p>
         <p class="clock" x-text="clock"></p>
       </header>
 
@@ -31,12 +31,24 @@
             class="tab"
             :class="{ active: currentMode === 'subway' }"
             @click="setMode('subway')"
-          >Subway</button>
+          >
+            Subway
+          </button>
           <button
             class="tab"
             :class="{ active: currentMode === 'bus' }"
             @click="setMode('bus')"
-          >Bus</button>
+          >
+            Bus
+          </button>
+          <button
+            class="tab"
+            :class="{ active: currentMode === 'saved' }"
+            @click="setMode('saved')"
+            x-show="favorites.length > 0"
+          >
+            Saved
+          </button>
           <select class="radius-select" x-model="radius" @change="refresh()">
             <option value="400">0.25 mi</option>
             <option value="800">0.5 mi</option>
@@ -69,6 +81,42 @@
       <p class="location-info" x-show="locationText" x-text="locationText"></p>
       <div class="error" x-show="error" x-text="error"></div>
 
+      <div class="alerts-banner" x-show="alerts.length > 0" x-cloak>
+        <button
+          class="alerts-toggle"
+          @click="alertsExpanded = !alertsExpanded"
+        >
+          <span class="alerts-icon">&#9888;</span>
+          <span
+            x-text="alerts.length + ' service alert' + (alerts.length !== 1 ? 's' : '')"
+          ></span>
+          <span
+            class="alerts-chevron"
+            :class="{ expanded: alertsExpanded }"
+            >&#9662;</span
+          >
+        </button>
+        <div class="alerts-list" x-show="alertsExpanded" x-transition>
+          <template x-for="alert in alerts" :key="alert.id">
+            <div class="alert-item">
+              <div class="alert-routes">
+                <template
+                  x-for="route in (alert.routes || []).slice(0, 6)"
+                  :key="route"
+                >
+                  <span
+                    class="line-badge small"
+                    x-text="route"
+                    :style="`background:${getLineColor(route)};color:${isLightLine(route) ? '#333' : '#fff'}`"
+                  ></span>
+                </template>
+              </div>
+              <p class="alert-header" x-text="alert.header"></p>
+            </div>
+          </template>
+        </div>
+      </div>
+
       <div class="loading" x-show="loading">
         <div class="spinner"></div>
         <p
@@ -78,23 +126,34 @@
 
       <div class="results" x-show="!loading">
         <!-- Subway results -->
-        <div x-show="currentMode === 'subway'">
-          <p class="no-arrivals" x-show="lastUpdated && stations.length === 0">
-            No subway stations found nearby. Try a different location.
-          </p>
+        <div x-show="currentMode === 'subway' || currentMode === 'saved'">
+          <p
+            class="no-arrivals"
+            x-show="lastUpdated && stations.length === 0"
+            x-text="currentMode === 'saved' ? 'No arrivals for your saved stations.' : 'No subway stations found nearby. Try a different location.'"
+          ></p>
           <template x-for="station in stations" :key="station.stop_id">
             <div class="station">
               <div class="station-header">
-                <a
-                  class="station-name station-nav-link"
-                  :href="`https://www.google.com/maps/dir/?api=1&destination=${station.stop_lat},${station.stop_lon}&travelmode=walking`"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  x-text="station.stop_name || station.stop_id"
-                ></a>
+                <div class="station-name-group">
+                  <button
+                    class="favorite-btn"
+                    :class="{ active: isFavorite(station.stop_id) }"
+                    @click="toggleFavorite(station.stop_id, station.stop_name || station.stop_id)"
+                    :title="isFavorite(station.stop_id) ? 'Remove from saved' : 'Save station'"
+                  >&#9733;</button>
+                  <a
+                    class="station-name station-nav-link"
+                    :href="`https://www.google.com/maps/dir/?api=1&destination=${station.stop_lat},${station.stop_lon}&travelmode=walking`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    x-text="station.stop_name || station.stop_id"
+                  ></a>
+                </div>
                 <span
                   class="station-distance"
-                  x-text="(station.distance_miles ? station.distance_miles.toFixed(2) : '?') + ' mi'"
+                  x-show="station.distance_miles"
+                  x-text="station.distance_miles ? station.distance_miles.toFixed(2) + ' mi' : ''"
                 ></span>
               </div>
               <p
@@ -192,7 +251,10 @@
       </div>
 
       <footer>
-        <p><strong>Attention!</strong> This website does NOT collect, store, or share any of your data.</p>
+        <p>
+          <strong>Attention!</strong> This website does NOT collect, store, or
+          share any of your data.
+        </p>
         <p>
           Real-time data from
           <a href="https://new.mta.info/developers" target="_blank">MTA</a>

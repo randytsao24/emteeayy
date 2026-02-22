@@ -17,6 +17,7 @@ func NewRouter(
 	stopSvc *location.StopService,
 	subwaySvc handlers.SubwayProvider,
 	busSvc handlers.BusProvider,
+	alertSvc handlers.AlertProvider,
 	webFS fs.FS,
 ) http.Handler {
 	mux := http.NewServeMux()
@@ -25,7 +26,7 @@ func NewRouter(
 	healthHandler := handlers.NewHealthHandler()
 	rootHandler := handlers.NewRootHandler()
 	locationHandler := handlers.NewLocationHandler(zipSvc, stopSvc)
-	transitHandler := handlers.NewTransitHandler(subwaySvc, busSvc, stopSvc, zipSvc)
+	transitHandler := handlers.NewTransitHandler(subwaySvc, busSvc, alertSvc, stopSvc, zipSvc)
 
 	// Serve frontend (if provided)
 	if webFS != nil {
@@ -44,6 +45,10 @@ func NewRouter(
 	mux.HandleFunc("GET /transit/location/zipcodes/all", locationHandler.GetAllZipCodes)
 	mux.HandleFunc("GET /transit/location/zip/{zipcode}/closest", locationHandler.GetClosestStops)
 	mux.HandleFunc("GET /transit/location/zip/{zipcode}", locationHandler.GetStopsByZip)
+
+	// Subway routes - alerts and multi-station lookup
+	mux.HandleFunc("GET /transit/subway/alerts", transitHandler.GetServiceAlerts)
+	mux.HandleFunc("GET /transit/subway/arrivals", transitHandler.GetSubwayArrivalsForStops)
 
 	// Subway routes - station-specific
 	mux.HandleFunc("GET /transit/subway/station/{stopId}", transitHandler.GetSubwayArrivals)

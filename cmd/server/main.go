@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
 	"log/slog"
 	"net/http"
@@ -50,18 +51,29 @@ func main() {
 	slog.Info("loaded subway stops", "total", stopSvc.Count(), "stations", stopSvc.ParentStationCount())
 
 	// Initialize transit services
-	subwaySvc := transit.NewSubwayService(cfg.HTTPTimeout)
-	slog.Info("initialized subway service")
+	subwaySvc := transit.NewSubwayService(cfg.HTTPTimeout, cfg.CacheTTL)
+	slog.Info("initialized subway service", "cache_ttl", cfg.CacheTTL)
 
-	busSvc := transit.NewBusService(cfg.MTABusAPIKey, cfg.HTTPTimeout)
+	busSvc := transit.NewBusService(cfg.MTABusAPIKey, cfg.HTTPTimeout, cfg.CacheTTL)
 	if busSvc.HasAPIKey() {
 		slog.Info("initialized bus service")
 	} else {
 		slog.Warn("bus service disabled - MTA_BUS_API_KEY not set")
 	}
 
+	alertSvc := transit.NewAlertService(cfg.HTTPTimeout, cfg.CacheTTL)
+	slog.Info("initialized alerts service")
+
+	// In development, serve web files from disk so frontend changes are
+	// picked up instantly without rebuilding the binary.
+	var webFS fs.FS = web.FS
+	if cfg.IsDevelopment() {
+		webFS = os.DirFS("web")
+		slog.Info("serving frontend from disk (dev mode)")
+	}
+
 	// Create router with all routes and middleware
-	router := api.NewRouter(cfg, zipSvc, stopSvc, subwaySvc, busSvc, web.FS)
+	router := api.NewRouter(cfg, zipSvc, stopSvc, subwaySvc, busSvc, alertSvc, webFS)
 
 	// Create server with timeouts
 	server := &http.Server{

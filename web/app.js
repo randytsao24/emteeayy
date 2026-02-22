@@ -28,6 +28,9 @@ function transitApp() {
     lastUpdated: null,
     clock: "",
     _refreshTimer: null,
+    favorites: JSON.parse(localStorage.getItem("emteeayy_favorites") || "[]"),
+    alerts: [],
+    alertsExpanded: false,
 
     init() {
       this.updateClock();
@@ -46,9 +49,15 @@ function transitApp() {
 
     setMode(mode) {
       this.currentMode = mode;
-      if (this.lastZip) this.fetchByZip(this.lastZip);
-      else if (this.lastCoords)
+      this.alerts = [];
+      this.alertsExpanded = false;
+      if (mode === "saved") {
+        this.loadFavorites();
+      } else if (this.lastZip) {
+        this.fetchByZip(this.lastZip);
+      } else if (this.lastCoords) {
         this.fetchByCoords(this.lastCoords.lat, this.lastCoords.lng);
+      }
     },
 
     submitZip() {
@@ -141,11 +150,19 @@ function transitApp() {
     },
 
     applyData(data) {
-      if (this.currentMode === "subway") {
+      if (this.currentMode === "subway" || this.currentMode === "saved") {
         this.stations = data.stations || [];
         this.busStops = [];
+        const routes = new Set();
+        for (const s of this.stations) {
+          for (const a of s.northbound || []) routes.add(a.route);
+          for (const a of s.southbound || []) routes.add(a.route);
+        }
+        if (routes.size > 0) this.fetchAlerts([...routes]);
+        else this.alerts = [];
       } else {
         this.stations = [];
+        this.alerts = [];
         const byStop = {};
         for (const arr of data.arrivals || []) {
           const key = arr.stop_name || arr.stop_id;
@@ -164,7 +181,8 @@ function transitApp() {
     },
 
     refresh() {
-      if (this.lastZip) this.fetchByZip(this.lastZip);
+      if (this.currentMode === "saved") this.loadFavorites();
+      else if (this.lastZip) this.fetchByZip(this.lastZip);
       else if (this.lastCoords)
         this.fetchByCoords(this.lastCoords.lat, this.lastCoords.lng);
     },
@@ -172,6 +190,63 @@ function transitApp() {
     scheduleRefresh() {
       clearInterval(this._refreshTimer);
       this._refreshTimer = setInterval(() => this.refresh(), 60000);
+    },
+
+    toggleFavorite(stopId, stopName) {
+      const idx = this.favorites.findIndex((f) => f.id === stopId);
+      if (idx >= 0) {
+        this.favorites.splice(idx, 1);
+      } else {
+        this.favorites.push({ id: stopId, name: stopName });
+      }
+      localStorage.setItem(
+        "emteeayy_favorites",
+        JSON.stringify(this.favorites)
+      );
+      if (this.favorites.length === 0 && this.currentMode === "saved") {
+        this.setMode("subway");
+      }
+    },
+
+    isFavorite(stopId) {
+      return this.favorites.some((f) => f.id === stopId);
+    },
+
+    async loadFavorites() {
+      if (this.favorites.length === 0) {
+        this.stations = [];
+        this.lastUpdated = null;
+        return;
+      }
+      this.loading = true;
+      this.error = null;
+      this.locationText = "Saved stations";
+      const ids = this.favorites.map((f) => f.id).join(",");
+      try {
+        const resp = await fetch(`/transit/subway/arrivals?stops=${ids}`);
+        const data = await resp.json();
+        if (!resp.ok)
+          throw new Error(data.message || data.error || "Failed to fetch");
+        this.applyData(data);
+      } catch (err) {
+        this.error = err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchAlerts(routes) {
+      try {
+        const resp = await fetch(
+          `/transit/subway/alerts?routes=${routes.join(",")}`
+        );
+        const data = await resp.json();
+        if (resp.ok && data.alerts) {
+          this.alerts = data.alerts;
+        }
+      } catch {
+        // Alerts are non-critical
+      }
     },
 
     getLineColor(line) {

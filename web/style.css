@@ -443,6 +443,29 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* ── Show more ── */
+
+button.show-more-btn {
+  width: 100%;
+  text-align: center;
+  margin-top: 14px;
+  padding: 10px 16px;
+  background: #6b8f71;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-decoration: none;
+}
+
+button.show-more-btn:hover {
+  background: #5a7a5f;
+}
+
 /* ── Footer ── */
 
 footer {

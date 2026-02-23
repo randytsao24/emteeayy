@@ -12,7 +12,7 @@ type SubwayProvider interface {
 type BusProvider interface {
 	HasAPIKey() bool
 	FindStopsNear(lat, lng float64, radiusMeters int) ([]transit.BusStop, error)
-	GetArrivalsNear(lat, lng float64, radiusMeters int) ([]transit.BusArrival, error)
+	GetArrivalsNear(lat, lng float64, radiusMeters, limit int) ([]transit.BusArrival, error)
 }
 
 // AlertProvider abstracts the service alerts data source.

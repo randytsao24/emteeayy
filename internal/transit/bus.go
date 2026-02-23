@@ -13,7 +13,8 @@ import (
 
 const (
 	defaultBusRadius = 400 // meters
-	maxBusStops      = 5
+	DefaultBusLimit  = 5
+	MaxBusStops      = 10
 )
 
 // BusStop represents a bus stop from the MTA API
@@ -30,6 +31,7 @@ type BusStop struct {
 type BusArrival struct {
 	Route           string    `json:"route"`
 	Destination     string    `json:"destination"`
+	Direction       string    `json:"direction,omitempty"`
 	StopID          string    `json:"stop_id"`
 	StopName        string    `json:"stop_name,omitempty"`
 	StopsAway       int       `json:"stops_away"`
@@ -109,16 +111,19 @@ func (s *BusService) FindStopsNear(lat, lng float64, radiusMeters int) ([]BusSto
 	return stops, nil
 }
 
-// GetArrivalsNear finds stops near a location and fetches arrivals for each
-func (s *BusService) GetArrivalsNear(lat, lng float64, radiusMeters int) ([]BusArrival, error) {
+// GetArrivalsNear finds stops near a location and fetches arrivals for each.
+// limit controls how many stops are queried (capped at MaxBusStops).
+func (s *BusService) GetArrivalsNear(lat, lng float64, radiusMeters, limit int) ([]BusArrival, error) {
 	stops, err := s.FindStopsNear(lat, lng, radiusMeters)
 	if err != nil {
 		return nil, err
 	}
 
-	// Limit number of stops to query
-	if len(stops) > maxBusStops {
-		stops = stops[:maxBusStops]
+	if limit <= 0 || limit > MaxBusStops {
+		limit = MaxBusStops
+	}
+	if len(stops) > limit {
+		stops = stops[:limit]
 	}
 
 	var allArrivals []BusArrival
@@ -127,9 +132,9 @@ func (s *BusService) GetArrivalsNear(lat, lng float64, radiusMeters int) ([]BusA
 		if err != nil {
 			continue
 		}
-		// Add stop name to each arrival
 		for i := range arrivals {
 			arrivals[i].StopName = stop.Name
+			arrivals[i].Direction = stop.Direction
 		}
 		allArrivals = append(allArrivals, arrivals...)
 	}

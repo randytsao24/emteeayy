@@ -64,7 +64,7 @@ func (m *mockBusProvider) FindStopsNear(lat, lng float64, radiusMeters int) ([]t
 	return m.stops, m.err
 }
 
-func (m *mockBusProvider) GetArrivalsNear(lat, lng float64, radiusMeters int) ([]transit.BusArrival, error) {
+func (m *mockBusProvider) GetArrivalsNear(lat, lng float64, radiusMeters, limit int) ([]transit.BusArrival, error) {
 	return m.arrivals, m.err
 }
 

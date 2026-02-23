@@ -302,8 +302,9 @@ func (h *TransitHandler) GetBusArrivalsNearZip(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	radius := parseIntQueryParam(r, "radius", 400, 100, 1000)
-	arrivals, err := h.bus.GetArrivalsNear(zip.Lat, zip.Lng, radius)
+	radius := parseIntQueryParam(r, "radius", 400, 100, maxSubwayRadius)
+	limit := parseIntQueryParam(r, "limit", transit.DefaultBusLimit, 1, transit.MaxBusStops)
+	arrivals, err := h.bus.GetArrivalsNear(zip.Lat, zip.Lng, radius, limit)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   "Failed to fetch bus arrivals",
@@ -358,8 +359,9 @@ func (h *TransitHandler) GetBusArrivalsNearCoords(w http.ResponseWriter, r *http
 		return
 	}
 
-	radius := parseIntQueryParam(r, "radius", 400, 100, 1000)
-	arrivals, err := h.bus.GetArrivalsNear(lat, lng, radius)
+	radius := parseIntQueryParam(r, "radius", 400, 100, maxSubwayRadius)
+	limit := parseIntQueryParam(r, "limit", transit.DefaultBusLimit, 1, transit.MaxBusStops)
+	arrivals, err := h.bus.GetArrivalsNear(lat, lng, radius, limit)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   "Failed to fetch bus arrivals",
@@ -403,7 +405,7 @@ func (h *TransitHandler) GetBusStopsNear(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	radius := parseIntQueryParam(r, "radius", 400, 100, 1000)
+	radius := parseIntQueryParam(r, "radius", 400, 100, maxSubwayRadius)
 	stops, err := h.bus.FindStopsNear(zip.Lat, zip.Lng, radius)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{

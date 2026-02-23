@@ -228,28 +228,50 @@
           <p class="no-arrivals" x-show="lastUpdated && busStops.length === 0">
             No buses found nearby. Try a different location.
           </p>
-          <template x-for="stop in busStops" :key="stop.name">
+          <template x-for="stop in (busShowAll ? busStops : busStops.slice(0, 5))" :key="stop.name">
             <div class="bus-stop">
               <div class="stop-header">
                 <span class="stop-name" x-text="stop.name"></span>
               </div>
-              <template x-for="(arr, i) in stop.arrivals.slice(0, 5)" :key="i">
-                <div class="bus-arrival">
-                  <div class="bus-info">
-                    <span class="bus-route" x-text="arr.route"></span>
-                    <span
-                      class="bus-destination"
-                      x-text="arr.destination && arr.destination.length > 30 ? arr.destination.substring(0, 30) + '...' : (arr.destination || '')"
-                    ></span>
-                  </div>
-                  <span
-                    class="bus-time"
-                    x-text="formatTime(arr.minutes_away)"
-                  ></span>
+              <template
+                x-for="group in stop.groups"
+                :key="stop.name + '-' + group.direction"
+              >
+                <div class="direction" x-show="group.arrivals.length > 0">
+                  <div
+                    class="direction-label"
+                    x-show="group.direction"
+                    x-text="'→ ' + expandDirection(group.direction)"
+                  ></div>
+                  <template
+                    x-for="(arr, i) in group.arrivals.slice(0, 5)"
+                    :key="i"
+                  >
+                    <div class="bus-arrival">
+                      <div class="bus-info">
+                        <span class="bus-route" x-text="arr.route"></span>
+                        <span
+                          class="bus-destination"
+                          x-text="arr.destination && arr.destination.length > 30 ? arr.destination.substring(0, 30) + '...' : (arr.destination || '')"
+                        ></span>
+                      </div>
+                      <span
+                        class="bus-time"
+                        x-text="formatTime(arr.minutes_away)"
+                      ></span>
+                    </div>
+                  </template>
                 </div>
               </template>
             </div>
           </template>
+          <button
+            class="show-more-btn"
+            x-show="!busShowAll && busStops.length > 5"
+            @click="showMoreBusStops()"
+          >
+            Show more stops
+          </button>
         </div>
 
         <p class="last-updated" x-show="lastUpdated">

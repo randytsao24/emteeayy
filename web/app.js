@@ -29,6 +29,7 @@ function transitApp() {
     clock: "",
     _refreshTimer: null,
     favorites: JSON.parse(localStorage.getItem("emteeayy_favorites") || "[]"),
+    busShowAll: false,
     alerts: [],
     alertsExpanded: false,
 
@@ -49,6 +50,7 @@ function transitApp() {
 
     setMode(mode) {
       this.currentMode = mode;
+      this.busShowAll = false;
       this.alerts = [];
       this.alertsExpanded = false;
       if (mode === "saved") {
@@ -104,7 +106,7 @@ function transitApp() {
       const endpoint =
         this.currentMode === "subway"
           ? `/transit/subway/near/${zip}?radius=${this.radius}`
-          : `/transit/bus/near/${zip}?radius=${this.radius}`;
+          : `/transit/bus/near/${zip}?radius=${this.radius}&limit=10`;
 
       try {
         const resp = await fetch(endpoint);
@@ -135,7 +137,7 @@ function transitApp() {
       const endpoint =
         this.currentMode === "subway"
           ? `/transit/subway/near?lat=${lat}&lng=${lng}&radius=${this.radius}`
-          : `/transit/bus/near?lat=${lat}&lng=${lng}&radius=${this.radius}`;
+          : `/transit/bus/near?lat=${lat}&lng=${lng}&radius=${this.radius}&limit=10`;
 
       try {
         const resp = await fetch(endpoint);
@@ -165,13 +167,20 @@ function transitApp() {
       } else {
         this.stations = [];
         this.alerts = [];
+        this.busShowAll = false;
         const byStop = {};
         for (const arr of data.arrivals || []) {
           const key = arr.stop_name || arr.stop_id;
-          if (!byStop[key]) byStop[key] = { name: key, arrivals: [] };
-          byStop[key].arrivals.push(arr);
+          if (!byStop[key]) byStop[key] = { name: key, directions: {} };
+          const dir = arr.direction || "";
+          if (!byStop[key].directions[dir])
+            byStop[key].directions[dir] = { direction: dir, arrivals: [] };
+          byStop[key].directions[dir].arrivals.push(arr);
         }
-        this.busStops = Object.values(byStop);
+        this.busStops = Object.values(byStop).map((stop) => ({
+          name: stop.name,
+          groups: Object.values(stop.directions),
+        }));
       }
       this.lastUpdated = new Date().toLocaleTimeString("en-US", {
         hour: "numeric",
@@ -271,6 +280,18 @@ function transitApp() {
         dest,
         arrivals: arrs,
       }));
+    },
+
+    showMoreBusStops() {
+      this.busShowAll = true;
+    },
+
+    expandDirection(abbr) {
+      const map = {
+        N: "Northbound", S: "Southbound", E: "Eastbound", W: "Westbound",
+        NE: "Northeast", NW: "Northwest", SE: "Southeast", SW: "Southwest",
+      };
+      return map[abbr] || abbr || "";
     },
 
     formatTime(minutes) {
